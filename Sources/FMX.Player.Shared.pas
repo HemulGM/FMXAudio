@@ -1,0 +1,439 @@
+unit FMX.Player.Shared;
+
+interface
+
+uses
+  FMX.BASS, FMX.BASS.AAC, FMX.Types, System.Classes;
+
+type
+  TFFTData = array[0..512] of Single;
+
+  TPlayerState = (psNone, psStop, psPlay, psPause, psOpening, psError);
+
+  TPlayerPlayKind = (pkFile, pkStream);
+
+  TFMXCustomPlayer = class abstract(TComponent)
+  private
+    FPauseOnIncomingCalls: Boolean;
+    FVolumeChannel: Single;
+    FOnChangeState: TNotifyEvent;
+    FOnEnd: TNotifyEvent;
+    FIsInit: Boolean;
+    FStreamURL: string;
+    FPlaySync: HSYNC;
+    FLastErrorCode: Integer;
+    FPlayerState: TPlayerState;
+    FPlayKind: TPlayerPlayKind;
+    FFileName: string;
+    function GetIsActiveChannel: Boolean;
+    function GetIsPlay: Boolean;
+    function GetPosition: Int64;
+    function GetBufferring: Int64;
+    function GetBufferringPercent: Extended;
+    function GetPositionByte: Int64;
+    function GetPositionPercent: Extended;
+    function GetPositionTime: string;
+    function GetPositionTimeLeft: string;
+    function GetSizeAsBuffer: Int64;
+    function GetSizeByte: Int64;
+    procedure DoChangeState;
+    procedure DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
+    procedure SetPosition(const Value: Int64);
+    procedure SetOnChangeState(const Value: TNotifyEvent);
+    procedure SetOnEnd(const Value: TNotifyEvent);
+    procedure SetPositionByte(const Value: Int64);
+    procedure SetPositionPercent(const Value: Extended);
+    procedure SetVolumeChannel(const Value: Single);
+    procedure SetPauseOnIncomingCalls(Value: Boolean);
+    procedure FUpdateChannelVolume;
+    procedure SetPlayerState(const Value: TPlayerState);
+    procedure DoPlayerState(const Value: TPlayerState);
+    procedure UnloadChannel;
+    function GetIsPause: Boolean;
+    function GetIsOpening: Boolean;
+    function GetVersion: string;
+    procedure SetFileName(const Value: string);
+  protected
+    FActiveChannel: HSTREAM;
+    function GetVolume: Single; virtual; abstract;
+    function InitBass(Handle: TWindowHandle): Boolean; virtual; abstract;
+    procedure SetVolume(const AValue: Single); virtual; abstract;
+    property IsActiveChannel: Boolean read GetIsActiveChannel;
+    procedure SetStreamURL(AUrl: string); virtual;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    //
+    function GetTimeFromPercent(Value: Extended): string;
+    function GetLibPath: string;
+    function GetData(var FFTData: TFFTData): Boolean;
+    function Init(Handle: TWindowHandle): Boolean; virtual;
+    function GetSize: Int64; virtual;
+    function Play: Boolean; virtual;
+    function Resume: Boolean; virtual;
+    procedure Stop; virtual;
+    procedure Pause; virtual;
+    //
+    property LastErrorCode: Integer read FLastErrorCode;
+    property Position: Int64 read GetPosition write SetPosition;
+    property PositionByte: Int64 read GetPositionByte write SetPositionByte;
+    property PositionPercent: Extended read GetPositionPercent write SetPositionPercent;
+    property Size: Int64 read GetSize;
+    property IsPlay: Boolean read GetIsPlay;
+    property IsPause: Boolean read GetIsPause;
+    property IsInit: Boolean read FIsInit;
+    property SizeByte: Int64 read GetSizeByte;
+    property SizeAsBuffer: Int64 read GetSizeAsBuffer;
+    property Bufferring: Int64 read GetBufferring;
+    property BufferringPercent: Extended read GetBufferringPercent;
+    property PositionTime: string read GetPositionTime;
+    property PositionTimeLeft: string read GetPositionTimeLeft;
+    property IsOpening: Boolean read GetIsOpening;
+    property Volume: Single read GetVolume write SetVolume;
+    property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
+    property PauseOnIncomingCalls: Boolean read FPauseOnIncomingCalls write SetPauseOnIncomingCalls;
+    property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
+    property OnChangeState: TNotifyEvent read FOnChangeState write SetOnChangeState;
+    property State: TPlayerState read FPlayerState write SetPlayerState;
+    property PlayKind: TPlayerPlayKind read FPlayKind;
+    property Version: string read GetVersion;
+    property StreamURL: string read FStreamURL write SetStreamURL;
+    property FileName: string read FFileName write SetFileName;
+  end;
+
+var
+  Player: TFMXCustomPlayer;
+
+implementation
+
+uses
+  System.Math, System.SysUtils;
+
+procedure FSync(handle: HSYNC; channel, data: Cardinal; user: Pointer);
+begin
+  if Assigned(Player) then
+    Player.DoOnEnd(handle, channel, data, user);
+end;
+
+{ TFMXCustomPlayer }
+
+constructor TFMXCustomPlayer.Create(AOwner: TComponent);
+begin
+  inherited;
+  Player := Self;
+  FActiveChannel := 0;
+  FVolumeChannel := 100;
+  FPlayerState := TPlayerState.psNone;
+end;
+
+procedure TFMXCustomPlayer.DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
+begin
+  FPlayerState := TPlayerState.psStop;
+  if Assigned(FOnEnd) then
+    FOnEnd(Self);
+end;
+
+procedure TFMXCustomPlayer.DoPlayerState(const Value: TPlayerState);
+begin
+  SetPlayerState(Value);
+  DoChangeState;
+end;
+
+procedure TFMXCustomPlayer.FUpdateChannelVolume;
+begin
+  if IsActiveChannel then
+  begin
+    BASS_ChannelSetAttribute(FActiveChannel, BASS_ATTRIB_VOL, FVolumeChannel / 100);
+  end;
+end;
+
+function TFMXCustomPlayer.Play: Boolean;
+begin
+  Result := False;
+  if IsOpening then
+    Exit;
+
+  DoPlayerState(TPlayerState.psOpening);
+  UnloadChannel;
+  try
+    case FPlayKind of
+      pkFile:
+        begin
+          FActiveChannel := BASS_StreamCreateFile(False, PChar(FFileName), 0, 0, BASS_UNICODE);
+        end;
+      pkStream:
+        begin
+          FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or
+            BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+        end;
+    end;
+
+    if IsActiveChannel then
+    begin
+      FUpdateChannelVolume;
+      if BASS_ChannelPlay(FActiveChannel, False) then
+      begin
+        BASS_ChannelRemoveSync(FActiveChannel, FPlaySync);
+        FPlaySync := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSync, nil);
+        DoPlayerState(TPlayerState.psPlay);
+        Result := True;
+      end;
+    end
+    else
+    begin
+      DoPlayerState(TPlayerState.psError);
+      FLastErrorCode := Bass_ErrorGetCode;
+    end;
+  finally
+    if IsOpening or (not Result) then
+      DoPlayerState(TPlayerState.psError);
+  end;
+end;
+
+procedure TFMXCustomPlayer.UnloadChannel;
+begin
+  if IsActiveChannel then
+  begin
+    BASS_StreamFree(FActiveChannel);
+  end;
+end;
+
+procedure TFMXCustomPlayer.Pause;
+begin
+  if IsActiveChannel then
+  begin
+    DoPlayerState(TPlayerState.psPause);
+    BASS_ChannelPause(FActiveChannel);
+  end;
+end;
+
+procedure TFMXCustomPlayer.SetPauseOnIncomingCalls(Value: Boolean);
+begin
+  FPauseOnIncomingCalls := Value;
+end;
+
+procedure TFMXCustomPlayer.SetPlayerState(const Value: TPlayerState);
+begin
+  FPlayerState := Value;
+end;
+
+procedure TFMXCustomPlayer.SetPosition(const Value: Int64);
+begin
+  if IsActiveChannel then
+    BASS_ChannelSetPosition(FActiveChannel, BASS_ChannelSeconds2Bytes(FActiveChannel, Value), BASS_POS_BYTE);
+end;
+
+procedure TFMXCustomPlayer.SetPositionByte(const Value: Int64);
+begin
+  if IsActiveChannel then
+    BASS_ChannelSetPosition(FActiveChannel, Value, BASS_POS_BYTE);
+end;
+
+procedure TFMXCustomPlayer.SetPositionPercent(const Value: Extended);
+begin
+  SetPosition(Round((GetSize / 100) * Value));
+end;
+
+procedure TFMXCustomPlayer.SetStreamURL(AUrl: string);
+begin
+  FStreamURL := AUrl;
+  FPlayKind := TPlayerPlayKind.pkStream;
+end;
+
+procedure TFMXCustomPlayer.SetFileName(const Value: string);
+begin
+  FFileName := Value;
+  FPlayKind := TPlayerPlayKind.pkFile;
+end;
+
+procedure TFMXCustomPlayer.SetVolumeChannel(const Value: Single);
+begin
+  FVolumeChannel := Value;
+  FUpdateChannelVolume;
+end;
+
+procedure TFMXCustomPlayer.Stop;
+begin
+  DoPlayerState(TPlayerState.psStop);
+  if IsActiveChannel then
+    BASS_ChannelStop(FActiveChannel);
+end;
+
+function TFMXCustomPlayer.GetBufferring: Int64;
+begin
+  Result := BASS_StreamGetFilePosition(FActiveChannel,
+    BASS_FILEPOS_BUFFER);
+end;
+
+function TFMXCustomPlayer.GetBufferringPercent: Extended;
+begin
+  if (SizeAsBuffer < 0) or (Bufferring < 0) then
+    Exit(0);
+  Result := Min(Max(0, (100 / SizeAsBuffer) * Bufferring), 100);
+end;
+
+function TFMXCustomPlayer.GetLibPath: string;
+begin
+  Result := BASS_FOLDER + bassdll;
+end;
+
+function TFMXCustomPlayer.GetPosition: Int64;
+begin
+  if IsActiveChannel then
+    Result := Trunc(BASS_ChannelBytes2Seconds(FActiveChannel, BASS_ChannelGetPosition(FActiveChannel, BASS_POS_BYTE)))
+  else
+    Result := 0;
+end;
+
+function TFMXCustomPlayer.GetData(var FFTData: TFFTData): Boolean;
+begin
+  Result := False;
+  if BASS_ChannelIsActive(FActiveChannel) <> BASS_ACTIVE_PLAYING then
+    Exit;
+  BASS_ChannelGetData(FActiveChannel, @FFTData, BASS_DATA_FFT512);
+  Result := True;
+end;
+
+function TFMXCustomPlayer.GetIsActiveChannel: Boolean;
+begin
+  Result := FActiveChannel <> 0;
+end;
+
+function TFMXCustomPlayer.GetIsOpening: Boolean;
+begin
+  Result := FPlayerState = TPlayerState.psOpening;
+end;
+
+function TFMXCustomPlayer.GetIsPause: Boolean;
+begin
+  Result := FPlayerState = TPlayerState.psPause;
+end;
+
+function TFMXCustomPlayer.GetIsPlay: Boolean;
+begin
+  Result := FPlayerState = TPlayerState.psPlay;
+end;
+
+function TFMXCustomPlayer.GetPositionByte: Int64;
+begin
+  if IsActiveChannel then
+    Result := BASS_ChannelGetPosition(FActiveChannel, BASS_POS_BYTE)
+  else
+    Result := 0;
+end;
+
+function TFMXCustomPlayer.GetPositionPercent: Extended;
+begin
+  Result := Min(Max(0, (100 / SizeByte) * PositionByte), 100);
+end;
+
+function TFMXCustomPlayer.GetPositionTime: string;
+var
+  M, S: Integer;
+begin
+  S := Position;
+  M := S div 60;
+  S := S mod 60;
+  Result := Format('%d:%.2d', [M, S]);
+end;
+
+function TFMXCustomPlayer.GetPositionTimeLeft: string;
+var
+  M, S: Integer;
+begin
+  S := Position - Size;
+  M := S div 60;
+  S := S mod 60;
+  Result := Format('-%d:%.2d', [Abs(M), Abs(S)]);
+end;
+
+function TFMXCustomPlayer.GetTimeFromPercent(Value: Extended): string;
+var
+  M, S: Integer;
+begin
+  S := Round(Size * (Value / 100));
+  M := S div 60;
+  S := S mod 60;
+  Result := Format('%d:%.2d', [M, S]);
+end;
+
+function TFMXCustomPlayer.GetVersion: string;
+begin
+  Result := BASSVERSIONTEXT;
+end;
+
+function TFMXCustomPlayer.Init(Handle: TWindowHandle): Boolean;
+begin
+  Result := False;
+  if BASS_Available then
+  begin
+    if InitBass(Handle) then
+    begin
+      BASS_PluginLoad(PChar(BASS_AAC_Lib), 0 or BASS_UNICODE);
+      BASS_SetConfig(BASS_CONFIG_NET_PLAYLIST, 1);
+      BASS_SetConfig(BASS_CONFIG_NET_PREBUF, 0);
+      Result := True;
+    end;
+  end;
+  FIsInit := Result;
+end;
+
+function TFMXCustomPlayer.GetSize: Int64;
+begin
+  if IsActiveChannel then
+    Result := Trunc(BASS_ChannelBytes2Seconds(FActiveChannel, BASS_ChannelGetLength(FActiveChannel, BASS_POS_BYTE)))
+  else
+    Result := -1;
+end;
+
+destructor TFMXCustomPlayer.Destroy;
+begin
+  UnloadChannel;
+  inherited;
+end;
+
+function TFMXCustomPlayer.GetSizeAsBuffer: Int64;
+begin
+  Result := BASS_StreamGetFilePosition(FActiveChannel, BASS_FILEPOS_END);
+end;
+
+function TFMXCustomPlayer.GetSizeByte: Int64;
+begin
+  if IsActiveChannel then
+    Result := BASS_ChannelGetLength(FActiveChannel, BASS_POS_BYTE)
+  else
+    Result := 0;
+end;
+
+procedure TFMXCustomPlayer.DoChangeState;
+begin
+  if Assigned(FOnChangeState) then
+    FOnChangeState(Self);
+end;
+
+function TFMXCustomPlayer.Resume: Boolean;
+begin
+  if IsActiveChannel and BASS_ChannelPlay(FActiveChannel, False) then
+  begin
+    DoPlayerState(TPlayerState.psPlay);
+    Result := True;
+  end
+  else
+  begin
+    DoPlayerState(TPlayerState.psError);
+    Result := False;
+  end;
+end;
+
+procedure TFMXCustomPlayer.SetOnChangeState(const Value: TNotifyEvent);
+begin
+  FOnChangeState := Value;
+end;
+
+procedure TFMXCustomPlayer.SetOnEnd(const Value: TNotifyEvent);
+begin
+  FOnEnd := Value;
+end;
+
+end.
+
