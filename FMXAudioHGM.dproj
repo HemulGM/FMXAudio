@@ -6,7 +6,7 @@
         <FrameworkType>FMX</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Android64</Platform>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>32787</TargetedPlatforms>
         <AppType>Package</AppType>
     </PropertyGroup>
@@ -120,7 +120,6 @@
         <DCCReference Include="Sources\FMX.BASS.pas"/>
         <DCCReference Include="Sources\FMX.Player.pas"/>
         <DCCReference Include="Sources\FMX.Player.Shared.pas"/>
-        <DCCReference Include="Sources\FMX.Player.Android.pas"/>
         <DCCReference Include="FMXAudioHGM.Reg.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
@@ -928,4 +927,5 @@
     <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
     <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
     <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
+    <ProjectExtensions/>
 </Project>

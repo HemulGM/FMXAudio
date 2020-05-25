@@ -6,7 +6,7 @@ uses
 {$IFDEF MSWINDOWS}
   Windows,
 {$ELSE}
-  SysUtils, FMX.Dialogs,
+  SysUtils,
 {$ENDIF}
   FMX.BASS;
 

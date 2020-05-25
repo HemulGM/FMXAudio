@@ -3,7 +3,7 @@ unit FMX.Player.Shared;
 interface
 
 uses
-  FMX.BASS, FMX.BASS.AAC, FMX.Types, System.Classes;
+  FMX.BASS, FMX.BASS.AAC, System.Classes;
 
 type
   TFFTData = array[0..512] of Single;
@@ -25,6 +25,10 @@ type
     FPlayerState: TPlayerState;
     FPlayKind: TPlayerPlayKind;
     FFileName: string;
+    FKeepPlayChannel: Boolean;
+    FFreq: Cardinal;
+    FDevice: LongInt;
+    FFlags: Cardinal;
     function GetIsActiveChannel: Boolean;
     function GetIsPlay: Boolean;
     function GetPosition: Int64;
@@ -53,11 +57,13 @@ type
     function GetIsOpening: Boolean;
     function GetVersion: string;
     procedure SetFileName(const Value: string);
+    procedure SetKeepPlayChannel(const Value: Boolean);
+    procedure SetDevice(const Value: LongInt);
+    procedure SetFlags(const Value: Cardinal);
+    procedure SetFreq(const Value: Cardinal);
   protected
     FActiveChannel: HSTREAM;
-    function GetVolume: Single; virtual; abstract;
-    function InitBass(Handle: TWindowHandle): Boolean; virtual; abstract;
-    procedure SetVolume(const AValue: Single); virtual; abstract;
+    function InitBass(Handle: Pointer): Boolean; virtual; abstract;
     property IsActiveChannel: Boolean read GetIsActiveChannel;
     procedure SetStreamURL(AUrl: string); virtual;
   public
@@ -67,7 +73,7 @@ type
     function GetTimeFromPercent(Value: Extended): string;
     function GetLibPath: string;
     function GetData(var FFTData: TFFTData): Boolean;
-    function Init(Handle: TWindowHandle): Boolean; virtual;
+    function Init(Handle: Pointer): Boolean; overload; virtual;
     function GetSize: Int64; virtual;
     function Play: Boolean; virtual;
     function Resume: Boolean; virtual;
@@ -89,7 +95,6 @@ type
     property PositionTime: string read GetPositionTime;
     property PositionTimeLeft: string read GetPositionTimeLeft;
     property IsOpening: Boolean read GetIsOpening;
-    property Volume: Single read GetVolume write SetVolume;
     property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
     property PauseOnIncomingCalls: Boolean read FPauseOnIncomingCalls write SetPauseOnIncomingCalls;
     property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
@@ -99,6 +104,10 @@ type
     property Version: string read GetVersion;
     property StreamURL: string read FStreamURL write SetStreamURL;
     property FileName: string read FFileName write SetFileName;
+    property KeepPlayChannel: Boolean read FKeepPlayChannel write SetKeepPlayChannel;
+    property Device: LongInt read FDevice write SetDevice default -1;
+    property Freq: Cardinal read FFreq write SetFreq default 44100;
+    property Flags: Cardinal read FFlags write SetFlags default 0;
   end;
 
 var
@@ -121,6 +130,10 @@ constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
   Player := Self;
+  FKeepPlayChannel := False;
+  FDevice := -1;
+  FFreq := 44100;
+  FFlags := 0;
   FActiveChannel := 0;
   FVolumeChannel := 100;
   FPlayerState := TPlayerState.psNone;
@@ -154,7 +167,8 @@ begin
     Exit;
 
   DoPlayerState(TPlayerState.psOpening);
-  UnloadChannel;
+  if not FKeepPlayChannel then
+    UnloadChannel;
   try
     case FPlayKind of
       pkFile:
@@ -173,7 +187,6 @@ begin
       FUpdateChannelVolume;
       if BASS_ChannelPlay(FActiveChannel, False) then
       begin
-        BASS_ChannelRemoveSync(FActiveChannel, FPlaySync);
         FPlaySync := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSync, nil);
         DoPlayerState(TPlayerState.psPlay);
         Result := True;
@@ -194,6 +207,7 @@ procedure TFMXCustomPlayer.UnloadChannel;
 begin
   if IsActiveChannel then
   begin
+    BASS_ChannelRemoveSync(FActiveChannel, FPlaySync);
     BASS_StreamFree(FActiveChannel);
   end;
 end;
@@ -240,10 +254,30 @@ begin
   FPlayKind := TPlayerPlayKind.pkStream;
 end;
 
+procedure TFMXCustomPlayer.SetDevice(const Value: LongInt);
+begin
+  FDevice := Value;
+end;
+
 procedure TFMXCustomPlayer.SetFileName(const Value: string);
 begin
   FFileName := Value;
   FPlayKind := TPlayerPlayKind.pkFile;
+end;
+
+procedure TFMXCustomPlayer.SetFlags(const Value: Cardinal);
+begin
+  FFlags := Value;
+end;
+
+procedure TFMXCustomPlayer.SetFreq(const Value: Cardinal);
+begin
+  FFreq := Value;
+end;
+
+procedure TFMXCustomPlayer.SetKeepPlayChannel(const Value: Boolean);
+begin
+  FKeepPlayChannel := Value;
 end;
 
 procedure TFMXCustomPlayer.SetVolumeChannel(const Value: Single);
@@ -362,7 +396,7 @@ begin
   Result := BASSVERSIONTEXT;
 end;
 
-function TFMXCustomPlayer.Init(Handle: TWindowHandle): Boolean;
+function TFMXCustomPlayer.Init(Handle: Pointer): Boolean;
 begin
   Result := False;
   if BASS_Available then

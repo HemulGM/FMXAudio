@@ -10,7 +10,7 @@ uses
   {$IFDEF MSWINDOWS}
   FMX.Player.Windows,
   {$ENDIF}
-  System.Classes, FMX.BASS, FMX.Types, FMX.Forms;
+  System.Classes, FMX.BASS;
 
 type
   [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
@@ -37,13 +37,16 @@ type
     property Bufferring;
     property BufferringPercent;
     //
-    property Volume;
     property VolumeChannel;
   published
     property Version;
     property PauseOnIncomingCalls default False;
     property OnEnd;
     property OnChangeState;
+    property KeepPlayChannel;
+    property Device;
+    property Freq;
+    property Flags;
   end;
 
 implementation

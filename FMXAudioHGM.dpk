@@ -36,12 +36,7 @@ contains
   FMX.BASS in 'Sources\FMX.BASS.pas',
   FMX.Player in 'Sources\FMX.Player.pas',
   FMX.Player.Shared in 'Sources\FMX.Player.Shared.pas',
-  {$IFDEF ANDROID}
-  FMX.Player.Android in 'Sources\FMX.Player.Android.pas',
-  {$ENDIF}
-  {$IFDEF MSWINDOWS}
-  FMX.Player.Windows in 'Sources\FMX.Player.Windows.pas',
-  {$ENDIF}
   FMXAudioHGM.Reg in 'FMXAudioHGM.Reg.pas';
 
 end.
+
