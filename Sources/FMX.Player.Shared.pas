@@ -104,7 +104,7 @@ type
     property Version: string read GetVersion;
     property StreamURL: string read FStreamURL write SetStreamURL;
     property FileName: string read FFileName write SetFileName;
-    property KeepPlayChannel: Boolean read FKeepPlayChannel write SetKeepPlayChannel;
+    property KeepPlayChannel: Boolean read FKeepPlayChannel write SetKeepPlayChannel default False;
     property Device: LongInt read FDevice write SetDevice default -1;
     property Freq: Cardinal read FFreq write SetFreq default 44100;
     property Flags: Cardinal read FFlags write SetFlags default 0;
