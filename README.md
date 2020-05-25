@@ -1,5 +1,4 @@
 # FMXAudio
- FMXAudio
 
 Initialization
 ```delphi
