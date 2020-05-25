@@ -1,14 +1,25 @@
 # FMXAudio
  FMXAudio
 
-Инициализация
+Initialization
 ```delphi
 if not FMXPlayer.Init(Handle) then
 begin
   ShowMessage('Аудио не инициализировано ' + FMXPlayer.GetLibPath);
 end;
 ```
-Запуск из потока
+Play stream
+```delphi
+FMXPlayer.StreamURL := StreamUrl;
+FMXPlayer.Play;
+```
+Play file
+```delphi
+FMXPlayer.FileName := FileName;
+FMXPlayer.Play;
+```
+## Async
+Play stream **async**
 ```delphi
 FMXPlayer.StreamURL := StreamUrl;
 TThread.CreateAnonymousThread(
@@ -17,7 +28,7 @@ TThread.CreateAnonymousThread(
     FMXPlayer.Play;
   end).Start;
 ```
-Запуск из файла
+Play file **async**
 ```delphi
 FMXPlayer.FileName := FileName;
 TThread.CreateAnonymousThread(
