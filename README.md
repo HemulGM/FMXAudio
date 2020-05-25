@@ -4,7 +4,7 @@ Initialization
 ```delphi
 if not FMXPlayer.Init(Handle) then
 begin
-  ShowMessage('Аудио не инициализировано ' + FMXPlayer.GetLibPath);
+  ShowMessage('Error ' + FMXPlayer.LastErrorCode.ToString);
 end;
 ```
 ## Sync
