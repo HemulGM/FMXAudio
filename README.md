@@ -37,3 +37,4 @@ TThread.CreateAnonymousThread(
     FMXPlayer.Play;
   end).Start;
 ```
+You can use the library to play sounds. And to prevent sounds from breaking off with new sounds, you must set the flag KeepPlayChannel = True;
