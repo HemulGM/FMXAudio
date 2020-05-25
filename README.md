@@ -7,6 +7,7 @@ begin
   ShowMessage('Аудио не инициализировано ' + FMXPlayer.GetLibPath);
 end;
 ```
+## Sync
 Play stream
 ```delphi
 FMXPlayer.StreamURL := StreamUrl;
