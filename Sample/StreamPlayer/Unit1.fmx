@@ -1,0 +1,39 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 379
+  ClientWidth = 348
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Edit1: TEdit
+    Touch.InteractiveGestures = [LongTap, DoubleTap]
+    Align = Top
+    TabOrder = 1
+    Text = 'https://icecast-newradio.cdnvideo.ru/newradio3'
+    Size.Width = 348.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object ButtonPlay: TButton
+    Position.X = 8.000000000000000000
+    Position.Y = 40.000000000000000000
+    TabOrder = 3
+    Text = 'Play'
+    OnClick = ButtonPlayClick
+  end
+  object ButtonAsyncPlay: TButton
+    Position.X = 96.000000000000000000
+    Position.Y = 40.000000000000000000
+    TabOrder = 2
+    Text = 'AsyncPlay'
+    OnClick = ButtonAsyncPlayClick
+  end
+  object FMXPlayer1: TFMXPlayer
+    Left = 112
+    Top = 104
+  end
+end
