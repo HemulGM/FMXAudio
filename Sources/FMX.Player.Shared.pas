@@ -13,12 +13,13 @@ type
   TPlayerPlayKind = (pkFile, pkStream);
 
   TFMXCustomPlayer = class abstract(TComponent)
+  protected
+    FIsInit: Boolean;
   private
     FPauseOnIncomingCalls: Boolean;
     FVolumeChannel: Single;
     FOnChangeState: TNotifyEvent;
     FOnEnd: TNotifyEvent;
-    FIsInit: Boolean;
     FStreamURL: string;
     FPlaySync: HSYNC;
     FLastErrorCode: Integer;
