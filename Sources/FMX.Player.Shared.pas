@@ -144,7 +144,13 @@ procedure TFMXCustomPlayer.DoOnEnd(handle: HSYNC; channel, data: Cardinal; user:
 begin
   FPlayerState := TPlayerState.psStop;
   if Assigned(FOnEnd) then
-    FOnEnd(Self);
+  begin
+    TThread.ForceQueue(nil,
+      procedure
+      begin
+        FOnEnd(Self);
+      end);
+  end;
 end;
 
 procedure TFMXCustomPlayer.DoPlayerState(const Value: TPlayerState);
