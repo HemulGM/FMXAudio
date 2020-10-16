@@ -15,6 +15,7 @@ type
   TFMXCustomPlayer = class abstract(TComponent)
   protected
     FIsInit: Boolean;
+    FAutoInit: Boolean;
   private
     FPauseOnIncomingCalls: Boolean;
     FVolumeChannel: Single;
@@ -30,6 +31,8 @@ type
     FFreq: Cardinal;
     FDevice: LongInt;
     FFlags: Cardinal;
+    FAutoplay: Boolean;
+    FAsync: Boolean;
     function GetIsActiveChannel: Boolean;
     function GetIsPlay: Boolean;
     function GetPosition: Int64;
@@ -57,16 +60,19 @@ type
     function GetIsPause: Boolean;
     function GetIsOpening: Boolean;
     function GetVersion: string;
-    procedure SetFileName(const Value: string);
     procedure SetKeepPlayChannel(const Value: Boolean);
     procedure SetDevice(const Value: LongInt);
     procedure SetFlags(const Value: Cardinal);
     procedure SetFreq(const Value: Cardinal);
+    procedure SetAutoplay(const Value: Boolean);
+    procedure SetAutoInit(const Value: Boolean);
+    procedure SetAsync(const Value: Boolean);
   protected
     FActiveChannel: HSTREAM;
     function InitBass(Handle: Pointer): Boolean; virtual; abstract;
     property IsActiveChannel: Boolean read GetIsActiveChannel;
     procedure SetStreamURL(AUrl: string); virtual;
+    procedure SetFileName(const Value: string); virtual;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -74,9 +80,10 @@ type
     function GetTimeFromPercent(Value: Extended): string;
     function GetLibPath: string;
     function GetData(var FFTData: TFFTData): Boolean;
-    function Init(Handle: Pointer): Boolean; overload; virtual;
+    function Init(Handle: Pointer = nil): Boolean; overload; virtual;
     function GetSize: Int64; virtual;
     function Play: Boolean; virtual;
+    procedure PlayAsync;
     function Resume: Boolean; virtual;
     procedure Stop; virtual;
     procedure Pause; virtual;
@@ -109,6 +116,9 @@ type
     property Device: LongInt read FDevice write SetDevice default -1;
     property Freq: Cardinal read FFreq write SetFreq default 44100;
     property Flags: Cardinal read FFlags write SetFlags default 0;
+    property Autoplay: Boolean read FAutoplay write SetAutoplay default False;
+    property AutoInit: Boolean read FAutoInit write SetAutoInit default False;
+    property Async: Boolean read FAsync write SetAsync default False;
   end;
 
 var
@@ -170,6 +180,9 @@ end;
 function TFMXCustomPlayer.Play: Boolean;
 begin
   Result := False;
+  if not FIsInit then
+    Exit;
+
   if IsOpening then
     Exit;
 
@@ -184,8 +197,7 @@ begin
         end;
       pkStream:
         begin
-          FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or
-            BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+          FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
         end;
     end;
 
@@ -208,6 +220,15 @@ begin
     if IsOpening or (not Result) then
       DoPlayerState(TPlayerState.psError);
   end;
+end;
+
+procedure TFMXCustomPlayer.PlayAsync;
+begin
+  TThread.CreateAnonymousThread(
+    procedure
+    begin
+      Play;
+    end).Start;
 end;
 
 procedure TFMXCustomPlayer.UnloadChannel;
@@ -257,8 +278,39 @@ end;
 
 procedure TFMXCustomPlayer.SetStreamURL(AUrl: string);
 begin
+  if AUrl.IsEmpty then
+    Exit;
   FStreamURL := AUrl;
   FPlayKind := TPlayerPlayKind.pkStream;
+
+  if not (csDesigning in ComponentState) then
+    if FAutoplay then
+      if FAsync then
+        TThread.CreateAnonymousThread(
+          procedure
+          begin
+            Play;
+          end).Start
+      else
+        Play;
+end;
+
+procedure TFMXCustomPlayer.SetAsync(const Value: Boolean);
+begin
+  FAsync := Value;
+end;
+
+procedure TFMXCustomPlayer.SetAutoInit(const Value: Boolean);
+begin
+  FAutoInit := Value;
+  if not (csDesigning in ComponentState) then
+    if FAutoInit then
+      Init;
+end;
+
+procedure TFMXCustomPlayer.SetAutoplay(const Value: Boolean);
+begin
+  FAutoplay := Value;
 end;
 
 procedure TFMXCustomPlayer.SetDevice(const Value: LongInt);
@@ -270,6 +322,17 @@ procedure TFMXCustomPlayer.SetFileName(const Value: string);
 begin
   FFileName := Value;
   FPlayKind := TPlayerPlayKind.pkFile;
+
+  if not (csDesigning in ComponentState) then
+    if FAutoplay then
+      if FAsync then
+        TThread.CreateAnonymousThread(
+          procedure
+          begin
+            Play;
+          end).Start
+      else
+        Play;
 end;
 
 procedure TFMXCustomPlayer.SetFlags(const Value: Cardinal);
@@ -302,12 +365,15 @@ end;
 
 function TFMXCustomPlayer.GetBufferring: Int64;
 begin
-  Result := BASS_StreamGetFilePosition(FActiveChannel,
-    BASS_FILEPOS_BUFFER);
+  if not FIsInit then
+    Exit(0);
+  Result := BASS_StreamGetFilePosition(FActiveChannel, BASS_FILEPOS_BUFFER);
 end;
 
 function TFMXCustomPlayer.GetBufferringPercent: Extended;
 begin
+  if not FIsInit then
+    Exit(0);
   if (SizeAsBuffer < 0) or (Bufferring < 0) then
     Exit(0);
   Result := Min(Max(0, (100 / SizeAsBuffer) * Bufferring), 100);
@@ -329,6 +395,8 @@ end;
 function TFMXCustomPlayer.GetData(var FFTData: TFFTData): Boolean;
 begin
   Result := False;
+  if not FIsInit then
+    Exit;
   if BASS_ChannelIsActive(FActiveChannel) <> BASS_ACTIVE_PLAYING then
     Exit;
   BASS_ChannelGetData(FActiveChannel, @FFTData, BASS_DATA_FFT512);
@@ -449,7 +517,11 @@ end;
 procedure TFMXCustomPlayer.DoChangeState;
 begin
   if Assigned(FOnChangeState) then
-    FOnChangeState(Self);
+    TThread.ForceQueue(nil,
+      procedure
+      begin
+        FOnChangeState(Self);
+      end);
 end;
 
 function TFMXCustomPlayer.Resume: Boolean;

@@ -16,8 +16,6 @@ type
   [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
   TFMXPlayer = class(TFMXPlatformPlayer)
   public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
     property LastErrorCode;
     //
     property IsPlay;
@@ -39,6 +37,11 @@ type
     //
     property VolumeChannel;
   published
+    property Async;
+    property Autoplay;
+    property AutoInit;
+    property StreamURL;
+    property FileName;
     property Version;
     property PauseOnIncomingCalls default False;
     property OnEnd;
@@ -50,18 +53,6 @@ type
   end;
 
 implementation
-
-{ TFMXPlayer }
-
-constructor TFMXPlayer.Create(AOwner: TComponent);
-begin
-  inherited Create(AOwner);
-end;
-
-destructor TFMXPlayer.Destroy;
-begin
-  inherited;
-end;
 
 end.
 
