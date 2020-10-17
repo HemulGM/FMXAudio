@@ -9,40 +9,39 @@ type
   [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
   TFMXPlayer = class(TFMXCustomPlayer)
   public
-    property LastErrorCode;
-    //
-    property IsPlay;
-    property IsPause;
+    property Bufferring;
+    property BufferringPercent;
     property IsInit;
     property IsOpening;
-    property State;
-    //
+    property IsPause;
+    property IsPlay;
+    property LastErrorCode;
     property Position;
     property PositionByte;
     property PositionPercent;
     property PositionTime;
     property PositionTimeLeft;
     property Size;
-    property SizeByte;
     property SizeAsBuffer;
-    property Bufferring;
-    property BufferringPercent;
-    //
+    property SizeByte;
+    property State;
     property VolumeChannel;
   published
-    property Async;
-    property Autoplay;
-    property AutoInit;
-    property StreamURL;
+    //Props
+    property Async default False;
+    property AutoInit default False;
+    property Autoplay default False;
+    property Device default -1;
     property FileName;
-    property Version;
+    property Flags default 0;
+    property Freq default 44100;
+    property KeepPlayChannel default False;
     property PauseOnIncomingCalls default False;
-    property OnEnd;
+    property StreamURL;
+    property Version;
+    //Events
     property OnChangeState;
-    property KeepPlayChannel;
-    property Device;
-    property Freq;
-    property Flags;
+    property OnEnd;
   end;
 
 implementation

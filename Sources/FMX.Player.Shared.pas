@@ -4,9 +4,7 @@ interface
 
 uses
   {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
-  Androidapi.JNI.App, FMX.Platform, FMX.PhoneDialer,
+  FMX.PhoneDialer,
   {$ENDIF}
   FMX.BASS, FMX.BASS.AAC, System.Classes;
 
@@ -17,121 +15,124 @@ type
 
   TPlayerPlayKind = (pkFile, pkStream);
 
+  TPlayAsyncResult = reference to procedure(const Success: Boolean);
+
   TFMXCustomPlayer = class abstract(TComponent)
   protected
-    FIsInit: Boolean;
+    FActiveChannel: HSTREAM;
     FAutoInit: Boolean;
+    FIsInit: Boolean;
   private
     {$IFDEF ANDROID}
     FPhoneDialerService: IFMXPhoneDialerService;
     procedure DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
     {$ENDIF}
   private
-    FPauseOnIncomingCalls: Boolean;
-    FVolumeChannel: Single;
+    FAsync: Boolean;
+    FAutoplay: Boolean;
+    FDevice: LongInt;
+    FFileName: string;
+    FFlags: Cardinal;
+    FFreq: Cardinal;
+    FKeepPlayChannel: Boolean;
+    FLastErrorCode: Integer;
     FOnChangeState: TNotifyEvent;
     FOnEnd: TNotifyEvent;
-    FStreamURL: string;
-    FPlaySync: HSYNC;
-    FLastErrorCode: Integer;
+    FPauseOnIncomingCalls: Boolean;
     FPlayerState: TPlayerState;
     FPlayKind: TPlayerPlayKind;
-    FFileName: string;
-    FKeepPlayChannel: Boolean;
-    FFreq: Cardinal;
-    FDevice: LongInt;
-    FFlags: Cardinal;
-    FAutoplay: Boolean;
-    FAsync: Boolean;
-    function GetIsActiveChannel: Boolean;
-    function GetIsPlay: Boolean;
-    function GetPosition: Int64;
+    FPlaySync: HSYNC;
+    FStreamURL: string;
+    FVolumeChannel: Single;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
+    function GetIsActiveChannel: Boolean;
+    function GetIsOpening: Boolean;
+    function GetIsPause: Boolean;
+    function GetIsPlay: Boolean;
+    function GetPosition: Int64;
     function GetPositionByte: Int64;
     function GetPositionPercent: Extended;
     function GetPositionTime: string;
     function GetPositionTimeLeft: string;
     function GetSizeAsBuffer: Int64;
     function GetSizeByte: Int64;
+    function GetSystemVolume: Single;
+    function GetVersion: string;
     procedure DoChangeState;
     procedure DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
-    procedure SetPosition(const Value: Int64);
-    procedure SetOnChangeState(const Value: TNotifyEvent);
-    procedure SetOnEnd(const Value: TNotifyEvent);
-    procedure SetPositionByte(const Value: Int64);
-    procedure SetPositionPercent(const Value: Extended);
-    procedure SetVolumeChannel(const Value: Single);
-    procedure SetPauseOnIncomingCalls(Value: Boolean);
-    procedure FUpdateChannelVolume;
-    procedure SetPlayerState(const Value: TPlayerState);
     procedure DoPlayerState(const Value: TPlayerState);
-    procedure UnloadChannel;
-    function GetIsPause: Boolean;
-    function GetIsOpening: Boolean;
-    function GetVersion: string;
-    procedure SetKeepPlayChannel(const Value: Boolean);
+    procedure FUpdateChannelVolume;
+    procedure SetAsync(const Value: Boolean);
+    procedure SetAutoInit(const Value: Boolean);
+    procedure SetAutoplay(const Value: Boolean);
     procedure SetDevice(const Value: LongInt);
     procedure SetFlags(const Value: Cardinal);
     procedure SetFreq(const Value: Cardinal);
-    procedure SetAutoplay(const Value: Boolean);
-    procedure SetAutoInit(const Value: Boolean);
-    procedure SetAsync(const Value: Boolean);
-    function GetSystemVolume: Single;
+    procedure SetKeepPlayChannel(const Value: Boolean);
+    procedure SetOnChangeState(const Value: TNotifyEvent);
+    procedure SetOnEnd(const Value: TNotifyEvent);
+    procedure SetPauseOnIncomingCalls(Value: Boolean);
+    procedure SetPlayerState(const Value: TPlayerState);
+    procedure SetPosition(const Value: Int64);
+    procedure SetPositionByte(const Value: Int64);
+    procedure SetPositionPercent(const Value: Extended);
     procedure SetSystemVolume(const AValue: Single);
+    procedure SetVolumeChannel(const Value: Single);
+    procedure UnloadChannel;
   protected
-    FActiveChannel: HSTREAM;
     function InitBass(Handle: Pointer): Boolean; virtual;
-    property IsActiveChannel: Boolean read GetIsActiveChannel;
-    procedure SetStreamURL(AUrl: string); virtual;
     procedure SetFileName(const Value: string); virtual;
+    procedure SetStreamURL(AUrl: string); virtual;
+    property IsActiveChannel: Boolean read GetIsActiveChannel;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    //
-    function GetTimeFromPercent(Value: Extended): string;
-    function GetLibPath: string;
+    //Methods
     function GetData(var FFTData: TFFTData): Boolean;
-    function Init(Handle: Pointer = nil): Boolean; overload; virtual;
+    function GetLibPath: string; virtual;
     function GetSize: Int64; virtual;
+    function GetTimeFromPercent(Value: Extended): string; virtual;
+    function Init(Handle: Pointer = nil): Boolean; overload; virtual;
     function Play: Boolean; virtual;
-    procedure PlayAsync;
     function Resume: Boolean; virtual;
-    procedure Stop; virtual;
     procedure Pause; virtual;
-    //
+    procedure PlayAsync(ResultMethod: TPlayAsyncResult = nil); virtual;
+    procedure Stop; virtual;
+    //Props
+    property Async: Boolean read FAsync write SetAsync;
+    property AutoInit: Boolean read FAutoInit write SetAutoInit;
+    property Autoplay: Boolean read FAutoplay write SetAutoplay;
+    property Bufferring: Int64 read GetBufferring;
+    property BufferringPercent: Extended read GetBufferringPercent;
+    property Device: LongInt read FDevice write SetDevice;
+    property FileName: string read FFileName write SetFileName;
+    property Flags: Cardinal read FFlags write SetFlags;
+    property Freq: Cardinal read FFreq write SetFreq;
+    property IsInit: Boolean read FIsInit;
+    property IsOpening: Boolean read GetIsOpening;
+    property IsPause: Boolean read GetIsPause;
+    property IsPlay: Boolean read GetIsPlay;
+    property KeepPlayChannel: Boolean read FKeepPlayChannel write SetKeepPlayChannel;
     property LastErrorCode: Integer read FLastErrorCode;
+    property PauseOnIncomingCalls: Boolean read FPauseOnIncomingCalls write SetPauseOnIncomingCalls;
+    property PlayKind: TPlayerPlayKind read FPlayKind;
     property Position: Int64 read GetPosition write SetPosition;
     property PositionByte: Int64 read GetPositionByte write SetPositionByte;
     property PositionPercent: Extended read GetPositionPercent write SetPositionPercent;
-    property Size: Int64 read GetSize;
-    property IsPlay: Boolean read GetIsPlay;
-    property IsPause: Boolean read GetIsPause;
-    property IsInit: Boolean read FIsInit;
-    property SizeByte: Int64 read GetSizeByte;
-    property SizeAsBuffer: Int64 read GetSizeAsBuffer;
-    property Bufferring: Int64 read GetBufferring;
-    property BufferringPercent: Extended read GetBufferringPercent;
     property PositionTime: string read GetPositionTime;
     property PositionTimeLeft: string read GetPositionTimeLeft;
-    property IsOpening: Boolean read GetIsOpening;
-    property SystemVolume: Single read GetSystemVolume write SetSystemVolume;
-    property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
-    property PauseOnIncomingCalls: Boolean read FPauseOnIncomingCalls write SetPauseOnIncomingCalls;
-    property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
-    property OnChangeState: TNotifyEvent read FOnChangeState write SetOnChangeState;
+    property Size: Int64 read GetSize;
+    property SizeAsBuffer: Int64 read GetSizeAsBuffer;
+    property SizeByte: Int64 read GetSizeByte;
     property State: TPlayerState read FPlayerState write SetPlayerState;
-    property PlayKind: TPlayerPlayKind read FPlayKind;
-    property Version: string read GetVersion;
     property StreamURL: string read FStreamURL write SetStreamURL;
-    property FileName: string read FFileName write SetFileName;
-    property KeepPlayChannel: Boolean read FKeepPlayChannel write SetKeepPlayChannel default False;
-    property Device: LongInt read FDevice write SetDevice default -1;
-    property Freq: Cardinal read FFreq write SetFreq default 44100;
-    property Flags: Cardinal read FFlags write SetFlags default 0;
-    property Autoplay: Boolean read FAutoplay write SetAutoplay default False;
-    property AutoInit: Boolean read FAutoInit write SetAutoInit default False;
-    property Async: Boolean read FAsync write SetAsync default False;
+    property SystemVolume: Single read GetSystemVolume write SetSystemVolume;
+    property Version: string read GetVersion;
+    property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
+    //Events
+    property OnChangeState: TNotifyEvent read FOnChangeState write SetOnChangeState;
+    property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
   end;
 
 var
@@ -143,7 +144,12 @@ uses
   {$IFDEF MSWINDOWS}
   Winapi.Windows, FMX.Platform.Win,
   {$ENDIF}
-  FMX.Forms, System.Math, System.SysUtils;
+  {$IFDEF ANDROID}
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
+  Androidapi.JNI.App,
+  {$ENDIF}
+  FMX.Platform, FMX.Forms, System.Math, System.SysUtils;
 
 procedure FSync(handle: HSYNC; channel, data: Cardinal; user: Pointer);
 begin
@@ -159,6 +165,8 @@ begin
   case ACallState of
     //TCallState.None:
 		//TCallState.Connected:
+		//TCallState.Dialing:
+		//TCallState.Disconnected:
     TCallState.Incoming:
       begin
         if FPauseOnIncomingCalls then
@@ -166,8 +174,6 @@ begin
           Pause;
         end;
       end;
-		//TCallState.Dialing:
-		//TCallState.Disconnected:
   end;
 end;
 {$ENDIF}
@@ -219,15 +225,13 @@ end;
 
 procedure TFMXCustomPlayer.DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
 begin
-  FPlayerState := TPlayerState.psStop;
+  DoPlayerState(TPlayerState.psStop);
   if Assigned(FOnEnd) then
-  begin
     TThread.ForceQueue(nil,
       procedure
       begin
         FOnEnd(Self);
       end);
-  end;
 end;
 
 procedure TFMXCustomPlayer.DoPlayerState(const Value: TPlayerState);
@@ -290,12 +294,20 @@ begin
   end;
 end;
 
-procedure TFMXCustomPlayer.PlayAsync;
+procedure TFMXCustomPlayer.PlayAsync(ResultMethod: TPlayAsyncResult);
 begin
   TThread.CreateAnonymousThread(
     procedure
+    var
+      Success: Boolean;
     begin
-      Play;
+      Success := Play;
+      if Assigned(ResultMethod) then
+        TThread.Synchronize(nil,
+          procedure
+          begin
+            ResultMethod(Success);
+          end);
     end).Start;
 end;
 
