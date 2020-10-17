@@ -1,6 +1,6 @@
 # FMXAudio
 
-Initialization
+Handle initialization
 ```delphi
 if not FMXPlayer.Init(Handle) then
 begin
@@ -22,21 +22,15 @@ FMXPlayer.Play;
 Play stream **async**
 ```delphi
 FMXPlayer.StreamURL := StreamUrl;
-TThread.CreateAnonymousThread(
-  procedure
-  begin
-    FMXPlayer.Play;
-  end).Start;
+FMXPlayer.PlayAsync;
 ```
 Play file **async**
 ```delphi
 FMXPlayer.FileName := FileName;
-TThread.CreateAnonymousThread(
-  procedure
-  begin
-    FMXPlayer.Play;
-  end).Start;
+FMXPlayer.PlayAsync;
 ```
+You can use properties: AutoInit, AutoPlay and Async
+
 You can use the library to play sounds. And to prevent sounds from breaking off with new sounds, you must set the flag KeepPlayChannel = True;
 
 ## Windows

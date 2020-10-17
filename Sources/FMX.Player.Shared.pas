@@ -3,6 +3,11 @@ unit FMX.Player.Shared;
 interface
 
 uses
+  {$IFDEF ANDROID}
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
+  Androidapi.JNI.App, FMX.Platform, FMX.PhoneDialer,
+  {$ENDIF}
   FMX.BASS, FMX.BASS.AAC, System.Classes;
 
 type
@@ -16,6 +21,11 @@ type
   protected
     FIsInit: Boolean;
     FAutoInit: Boolean;
+  private
+    {$IFDEF ANDROID}
+    FPhoneDialerService: IFMXPhoneDialerService;
+    procedure DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
+    {$ENDIF}
   private
     FPauseOnIncomingCalls: Boolean;
     FVolumeChannel: Single;
@@ -67,6 +77,8 @@ type
     procedure SetAutoplay(const Value: Boolean);
     procedure SetAutoInit(const Value: Boolean);
     procedure SetAsync(const Value: Boolean);
+    function GetSystemVolume: Single;
+    procedure SetSystemVolume(const AValue: Single);
   protected
     FActiveChannel: HSTREAM;
     function InitBass(Handle: Pointer): Boolean; virtual;
@@ -103,6 +115,7 @@ type
     property PositionTime: string read GetPositionTime;
     property PositionTimeLeft: string read GetPositionTimeLeft;
     property IsOpening: Boolean read GetIsOpening;
+    property SystemVolume: Single read GetSystemVolume write SetSystemVolume;
     property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
     property PauseOnIncomingCalls: Boolean read FPauseOnIncomingCalls write SetPauseOnIncomingCalls;
     property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
@@ -140,6 +153,25 @@ end;
 
 { TFMXCustomPlayer }
 
+{$IFDEF ANDROID}
+procedure TFMXCustomPlayer.DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
+begin
+  case ACallState of
+    //TCallState.None:
+		//TCallState.Connected:
+    TCallState.Incoming:
+      begin
+        if FPauseOnIncomingCalls then
+        begin
+          Pause;
+        end;
+      end;
+		//TCallState.Dialing:
+		//TCallState.Disconnected:
+  end;
+end;
+{$ENDIF}
+
 constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
@@ -151,6 +183,38 @@ begin
   FActiveChannel := 0;
   FVolumeChannel := 100;
   FPlayerState := TPlayerState.psNone;
+end;
+
+function TFMXCustomPlayer.GetSystemVolume: Single;
+{$IFDEF ANDROID}
+var
+  AudioManager: JAudioManager;
+{$ENDIF}
+begin
+{$IFDEF ANDROID}
+  AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
+  Result := AudioManager.getStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
+  Result := Result / AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
+{$ENDIF}
+{$IFDEF MSWINDOWS}
+  Result := BASS_GetVolume;
+{$ENDIF}
+end;
+
+procedure TFMXCustomPlayer.SetSystemVolume(const AValue: Single);
+{$IFDEF ANDROID}
+var
+  AudioManager: JAudioManager;
+{$ENDIF}
+begin
+{$IFDEF ANDROID}
+  AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
+  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC)
+    * AValue), 0);
+{$ENDIF}
+{$IFDEF MSWINDOWS}
+  BASS_SetVolume(AValue);
+{$ENDIF}
 end;
 
 procedure TFMXCustomPlayer.DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
@@ -496,29 +560,40 @@ begin
     end;
   end;
   FIsInit := Result;
+  {$IFDEF ANDROID}
+  if Result then
+  begin
+    Result := False;
+    TPlatformServices.Current.SupportsPlatformService(IFMXPhoneDialerService, IInterface(FPhoneDialerService));
+    if Assigned(FPhoneDialerService) then
+    begin
+      FPhoneDialerService.OnCallStateChanged := DetectIsCallStateChanged;
+      Result := True;
+    end;
+  end;
+  {$ENDIF}
 end;
 
 function TFMXCustomPlayer.InitBass(Handle: Pointer): Boolean;
 {$IFDEF MSWINDOWS}
 var
   WinHWND: HWND;
+{$ENDIF}
 begin
+{$IFDEF MSWINDOWS}
   if Handle = nil then
     WinHWND := 0 //WindowHandleToPlatform(Application.MainForm.Handle).Wnd
   else
     WinHWND := WindowHandleToPlatform(Handle).Wnd;
 
   Result := BASS_Init(Device, Freq, Flags, WinHWND, nil);
-end;
 {$ENDIF}
-
 {$IFDEF ANDROID}
-begin
   //if Handle = nil then
   //  Handle := Application.MainForm;
   Result := BASS_Init(Device, Freq, Flags, Handle, nil);
-end;
 {$ENDIF}
+end;
 
 function TFMXCustomPlayer.GetSize: Int64;
 begin
