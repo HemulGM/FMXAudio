@@ -3,18 +3,11 @@ unit FMX.Player;
 interface
 
 uses
-  FMX.Player.Shared,
-  {$IFDEF ANDROID}
-  FMX.Player.Android,
-  {$ENDIF}
-  {$IFDEF MSWINDOWS}
-  FMX.Player.Windows,
-  {$ENDIF}
-  System.Classes, FMX.BASS;
+  FMX.Player.Shared, System.Classes, FMX.BASS;
 
 type
   [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
-  TFMXPlayer = class(TFMXPlatformPlayer)
+  TFMXPlayer = class(TFMXCustomPlayer)
   public
     property LastErrorCode;
     //

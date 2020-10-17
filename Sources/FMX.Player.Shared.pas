@@ -69,7 +69,7 @@ type
     procedure SetAsync(const Value: Boolean);
   protected
     FActiveChannel: HSTREAM;
-    function InitBass(Handle: Pointer): Boolean; virtual; abstract;
+    function InitBass(Handle: Pointer): Boolean; virtual;
     property IsActiveChannel: Boolean read GetIsActiveChannel;
     procedure SetStreamURL(AUrl: string); virtual;
     procedure SetFileName(const Value: string); virtual;
@@ -127,7 +127,10 @@ var
 implementation
 
 uses
-  System.Math, System.SysUtils;
+  {$IFDEF MSWINDOWS}
+  Winapi.Windows, FMX.Platform.Win,
+  {$ENDIF}
+  FMX.Forms, System.Math, System.SysUtils;
 
 procedure FSync(handle: HSYNC; channel, data: Cardinal; user: Pointer);
 begin
@@ -197,7 +200,8 @@ begin
         end;
       pkStream:
         begin
-          FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+          FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or
+            BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
         end;
     end;
 
@@ -289,10 +293,17 @@ begin
         TThread.CreateAnonymousThread(
           procedure
           begin
-            Play;
+            if not Play then
+            begin
+              Sleep(100);
+              Play;
+            end;
           end).Start
-      else
+      else if not Play then
+      begin
+        Sleep(100);
         Play;
+      end;
 end;
 
 procedure TFMXCustomPlayer.SetAsync(const Value: Boolean);
@@ -486,6 +497,28 @@ begin
   end;
   FIsInit := Result;
 end;
+
+function TFMXCustomPlayer.InitBass(Handle: Pointer): Boolean;
+{$IFDEF MSWINDOWS}
+var
+  WinHWND: HWND;
+begin
+  if Handle = nil then
+    WinHWND := 0 //WindowHandleToPlatform(Application.MainForm.Handle).Wnd
+  else
+    WinHWND := WindowHandleToPlatform(Handle).Wnd;
+
+  Result := BASS_Init(Device, Freq, Flags, WinHWND, nil);
+end;
+{$ENDIF}
+
+{$IFDEF ANDROID}
+begin
+  //if Handle = nil then
+  //  Handle := Application.MainForm;
+  Result := BASS_Init(Device, Freq, Flags, Handle, nil);
+end;
+{$ENDIF}
 
 function TFMXCustomPlayer.GetSize: Int64;
 begin
