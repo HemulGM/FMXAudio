@@ -2,8 +2,8 @@ object Form2: TForm2
   Left = 0
   Top = 0
   Caption = 'Form2'
-  ClientHeight = 299
-  ClientWidth = 635
+  ClientHeight = 251
+  ClientWidth = 281
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -27,9 +27,18 @@ object Form2: TForm2
     Top = 35
     Width = 75
     Height = 25
-    Caption = 'Button1'
+    Caption = 'Play'
     TabOrder = 1
     OnClick = Button1Click
+  end
+  object Button2: TButton
+    Left = 89
+    Top = 35
+    Width = 75
+    Height = 25
+    Caption = 'Play Async'
+    TabOrder = 2
+    OnClick = Button2Click
   end
   object FMXPlayer1: TFMXPlayer
     Left = 112

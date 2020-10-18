@@ -119,7 +119,6 @@
         <DCCReference Include="Sources\FMX.BASS.AAC.pas"/>
         <DCCReference Include="Sources\FMX.BASS.pas"/>
         <DCCReference Include="Sources\FMX.Player.pas"/>
-        <DCCReference Include="Sources\FMX.Player.Shared.pas"/>
         <DCCReference Include="FMXAudioHGM.Reg.pas"/>
         <None Include="README.md"/>
         <BuildConfiguration Include="Release">

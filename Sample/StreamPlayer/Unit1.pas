@@ -4,8 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, FMX.Types, FMX.Controls, FMX.Forms,
-  FMX.Graphics, FMX.Dialogs, FMX.Player, FMX.StdCtrls, FMX.Controls.Presentation, FMX.Edit, FMX.Player.Shared,
-  FMX.Player.Windows;
+  FMX.Graphics, FMX.Dialogs, FMX.Player, FMX.StdCtrls, FMX.Controls.Presentation, FMX.Edit, FMX.Player.Shared;
 
 type
   TForm1 = class(TForm)
@@ -33,18 +32,12 @@ procedure TForm1.ButtonAsyncPlayClick(Sender: TObject);
 begin
   FMXPlayer1.StreamURL := Edit1.Text;
   //Start playing async
-  TThread.CreateAnonymousThread(
-    procedure
+  FMXPlayer1.PlayAsync(
+    procedure(const Success: Boolean)
     begin
-      if not FMXPlayer1.Play then
-      begin
-        TThread.ForceQueue(nil,
-          procedure
-          begin
-            ShowMessage('not ok ' + FMXPlayer1.LastErrorCode.ToString);
-          end);
-      end;
-    end).Start;
+      if not Success then
+        ShowMessage('not ok ' + FMXPlayer1.LastErrorCode.ToString);
+    end);
 end;
 
 procedure TForm1.ButtonPlayClick(Sender: TObject);
