@@ -81,7 +81,6 @@ type
     procedure SetVolumeChannel(const Value: Single);
     procedure UnloadChannel;
   protected
-    function InitBass(Handle: Pointer): Boolean; virtual;
     procedure SetFileName(const Value: string); virtual;
     procedure SetStreamURL(AUrl: string); virtual;
     property IsActiveChannel: Boolean read GetIsActiveChannel;
@@ -93,7 +92,10 @@ type
     function GetLibPath: string; virtual;
     function GetSize: Int64; virtual;
     function GetTimeFromPercent(Value: Extended): string; virtual;
-    function Init(Handle: Pointer = nil): Boolean; overload; virtual;
+    /// <summary>
+    /// Use Handle (for android, fmx) or WindowHandle (windows, fmx/vcl) or nothing
+    /// </summary>
+    function Init(Handle: Pointer = nil; HWND: NativeUInt = 0): Boolean; overload; virtual;
     function Play: Boolean; virtual;
     function Resume: Boolean; virtual;
     procedure Pause; virtual;
@@ -180,14 +182,14 @@ implementation
 
 uses
   {$IFDEF MSWINDOWS}
-  Winapi.Windows, FMX.Platform.Win,
+  Winapi.Windows,
   {$ENDIF}
   {$IFDEF ANDROID}
   FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
   Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
   Androidapi.JNI.App,
   {$ENDIF}
-  FMX.Forms, FMX.Platform, System.Math, System.SysUtils;
+  System.Math, System.SysUtils;
 
 procedure FSync(handle: HSYNC; channel, data: Cardinal; user: Pointer);
 begin
@@ -592,18 +594,23 @@ begin
   Result := BASSVERSIONTEXT;
 end;
 
-function TFMXCustomPlayer.Init(Handle: Pointer): Boolean;
+function TFMXCustomPlayer.Init(Handle: Pointer; HWND: NativeUInt): Boolean;
 begin
   Result := False;
   if BASS_Available then
   begin
-    if InitBass(Handle) then
-    begin
-      BASS_PluginLoad(PChar(BASS_AAC_Lib), 0 or BASS_UNICODE);
-      BASS_SetConfig(BASS_CONFIG_NET_PLAYLIST, 1);
-      BASS_SetConfig(BASS_CONFIG_NET_PREBUF, 0);
-      Result := True;
-    end;
+    {$IFDEF MSWINDOWS}
+    if BASS_Init(Device, Freq, Flags, HWND, nil) then
+    {$ENDIF}
+    {$IFDEF ANDROID}
+      if BASS_Init(Device, Freq, Flags, Handle, nil) then
+    {$ENDIF}
+      begin
+        BASS_PluginLoad(PChar(BASS_AAC_Lib), 0 or BASS_UNICODE);
+        BASS_SetConfig(BASS_CONFIG_NET_PLAYLIST, 1);
+        BASS_SetConfig(BASS_CONFIG_NET_PREBUF, 0);
+        Result := True;
+      end;
   end;
   FIsInit := Result;
   {$IFDEF ANDROID}
@@ -618,27 +625,6 @@ begin
     end;
   end;
   {$ENDIF}
-end;
-
-function TFMXCustomPlayer.InitBass(Handle: Pointer): Boolean;
-{$IFDEF MSWINDOWS}
-var
-  WinHWND: HWND;
-{$ENDIF}
-begin
-{$IFDEF MSWINDOWS}
-  if Handle = nil then
-    WinHWND := 0 //WindowHandleToPlatform(Application.MainForm.Handle).Wnd
-  else
-    WinHWND := WindowHandleToPlatform(Handle).Wnd;
-
-  Result := BASS_Init(Device, Freq, Flags, WinHWND, nil);
-{$ENDIF}
-{$IFDEF ANDROID}
-  //if Handle = nil then
-  //  Handle := Application.MainForm;
-  Result := BASS_Init(Device, Freq, Flags, Handle, nil);
-{$ENDIF}
 end;
 
 function TFMXCustomPlayer.GetSize: Int64;

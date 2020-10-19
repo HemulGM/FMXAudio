@@ -42,7 +42,7 @@ end;
 
 procedure TForm2.FormCreate(Sender: TObject);
 begin
-  if not FMXPlayer1.Init(nil) then
+  if not FMXPlayer1.Init(nil, Handle) then
     ShowMessage('Error');
 end;
 

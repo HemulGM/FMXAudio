@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, FMX.Types, FMX.Controls, FMX.Forms,
-  FMX.Graphics, FMX.Dialogs, FMX.Player, FMX.StdCtrls, FMX.Controls.Presentation, FMX.Edit, FMX.Player.Shared;
+  FMX.Graphics, FMX.Dialogs, FMX.Player, FMX.StdCtrls, FMX.Controls.Presentation, FMX.Edit;
 
 type
   TForm1 = class(TForm)
@@ -25,6 +25,9 @@ var
   Form1: TForm1;
 
 implementation
+
+uses
+  FMX.Platform.Win;
 
 {$R *.fmx}
 
@@ -53,7 +56,7 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  if not FMXPlayer1.Init(Handle) then
+  if not FMXPlayer1.Init(Handle, WindowHandleToPlatform(Handle).Wnd) then
     ShowMessage('Error ' + FMXPlayer1.LastErrorCode.ToString);
 end;
 
