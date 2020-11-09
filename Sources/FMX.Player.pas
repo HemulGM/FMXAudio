@@ -187,7 +187,7 @@ uses
   {$IFDEF ANDROID}
   FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
   Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
-  Androidapi.JNI.App,
+  Androidapi.JNI.App, FMX.Platform,
   {$ENDIF}
   System.Math, System.SysUtils;
 
