@@ -182,6 +182,7 @@ var
 implementation
 
 uses
+  FMX.Platform,
   {$IFDEF MSWINDOWS}
   Winapi.Windows,
   {$ENDIF}
