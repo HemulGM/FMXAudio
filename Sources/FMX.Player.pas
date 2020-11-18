@@ -44,6 +44,7 @@ type
     FPlaySync: HSYNC;
     FStreamURL: string;
     FVolumeChannel: Single;
+    FStarting: Boolean;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
     function GetIsActiveChannel: Boolean;
@@ -222,6 +223,7 @@ constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
   Player := Self;
+  FStarting := False;
   FKeepPlayChannel := False;
   FDevice := -1;
   FFreq := 44100;
@@ -253,6 +255,8 @@ var
   AudioManager: JAudioManager;
 {$ENDIF}
 begin
+  if csDesigning in ComponentState then
+    Exit;
 {$IFDEF ANDROID}
   AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
   AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC)
@@ -282,6 +286,8 @@ end;
 
 procedure TFMXCustomPlayer.FUpdateChannelVolume;
 begin
+  if csDesigning in ComponentState then
+    Exit;
   if IsActiveChannel then
   begin
     BASS_ChannelSetAttribute(FActiveChannel, BASS_ATTRIB_VOL, FVolumeChannel / 100);
@@ -338,6 +344,9 @@ begin
     var
       Success: Boolean;
     begin
+      while FStarting do
+        Sleep(100);
+      FStarting := True;
       try
         Success := Play;
         if Assigned(ResultMethod) then
@@ -348,6 +357,7 @@ begin
             end);
       except
       end;
+      FStarting := False;
     end).Start;
 end;
 
@@ -400,26 +410,35 @@ procedure TFMXCustomPlayer.SetStreamURL(AUrl: string);
 begin
   if AUrl.IsEmpty then
     Exit;
+  if FStreamURL = AUrl then
+  begin
+    if (FAutoplay and (not IsPlay)) then
+      Play;
+    Exit;
+  end;
+
   FStreamURL := AUrl;
   FPlayKind := TPlayerPlayKind.pkStream;
 
-  if not (csDesigning in ComponentState) then
-    if FAutoplay then
-      if FAsync then
-        PlayAsync(
-          procedure(const Success: Boolean)
+  if csDesigning in ComponentState then
+    Exit;
+
+  if FAutoplay then
+    if FAsync then
+      PlayAsync(
+        procedure(const Success: Boolean)
+        begin
+          if not Success then
           begin
-            if not Success then
-            begin
-              Sleep(100);
-              PlayAsync;
-            end;
-          end)
-      else if not Play then
-      begin
-        Sleep(100);
-        Play;
-      end;
+            Sleep(100);
+            PlayAsync;
+          end;
+        end)
+    else if not Play then
+    begin
+      Sleep(100);
+      Play;
+    end;
 end;
 
 procedure TFMXCustomPlayer.SetAsync(const Value: Boolean);
