@@ -187,7 +187,7 @@ var
 implementation
 
 uses
-  FMX.Platform,
+  FMX.platform,
   {$IFDEF MSWINDOWS}
   Winapi.Windows,
   {$ENDIF}
@@ -210,7 +210,6 @@ end;
 {$IFDEF ANDROID}
 procedure TFMXCustomPlayer.DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
 begin
-
   case ACallState of    //TCallState.None:
 		//TCallState.Connected:
 		//TCallState.Dialing:
@@ -267,7 +266,6 @@ begin
     Exit;
 {$IFDEF ANDROID}
   AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
-
   AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC) * AValue), 0);
 {$ENDIF}
 {$IFDEF MSWINDOWS}
@@ -426,21 +424,21 @@ end;
 
 procedure TFMXCustomPlayer.SetStreamURL(AUrl: string);
 begin
+  FStreamURL := AUrl;
+  FPlayKind := TPlayerPlayKind.pkStream;
+
   if AUrl.IsEmpty then
     Exit;
+
+  if csDesigning in ComponentState then
+    Exit;
+
   if FStreamURL = AUrl then
   begin
     if (FAutoplay and (not IsPlay)) then
       Play;
     Exit;
   end;
-
-  FStreamURL := AUrl;
-  FPlayKind := TPlayerPlayKind.pkStream;
-
-
-  if csDesigning in ComponentState then
-    Exit;
 
   if FAutoplay then
     if FAsync then
@@ -449,7 +447,6 @@ begin
         begin
           if not Success then
           begin
-
             Sleep(100);
             PlayAsync;
           end;
