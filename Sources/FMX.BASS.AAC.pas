@@ -33,9 +33,9 @@ const
 {$ENDIF}
 {$IFDEF MACOS}
   {$IFDEF IOS}
-    bassAccDll = 'libbass_aac.so';
+  bassAccDll = 'libbass_aac.so';
   {$ELSE}
-    bassAccDll = 'libbass_aac.dylib';
+  bassAccDll = 'libbass_aac.dylib';
   {$ENDIF}
 {$ENDIF}
 {$IFDEF ANDROID}

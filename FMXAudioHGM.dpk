@@ -35,7 +35,8 @@ contains
   FMX.BASS.AAC in 'Sources\FMX.BASS.AAC.pas',
   FMX.BASS in 'Sources\FMX.BASS.pas',
   FMX.Player in 'Sources\FMX.Player.pas',
-  FMXAudioHGM.Reg in 'FMXAudioHGM.Reg.pas';
+  FMXAudioHGM.Reg in 'FMXAudioHGM.Reg.pas',
+  FMX.BASS.Plugins in 'Sources\FMX.BASS.Plugins.pas';
 
 end.
 

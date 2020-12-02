@@ -6,7 +6,7 @@ uses
   {$IFDEF ANDROID}
   FMX.PhoneDialer,
   {$ENDIF}
-  FMX.BASS, FMX.BASS.AAC, System.Classes;
+  FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins, System.Classes;
 
 type
   TFFTData = array[0..512] of Single;
@@ -44,6 +44,7 @@ type
     FPlaySync: HSYNC;
     FStreamURL: string;
     FVolumeChannel: Single;
+    FPlugins: TFMXPlayerPlugins;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
     function GetIsActiveChannel: Boolean;
@@ -80,6 +81,7 @@ type
     procedure SetSystemVolume(const AValue: Single);
     procedure SetVolumeChannel(const Value: Single);
     procedure UnloadChannel;
+    procedure SetPlugins(const Value: TFMXPlayerPlugins);
   protected
     procedure SetFileName(const Value: string); virtual;
     procedure SetStreamURL(AUrl: string); virtual;
@@ -96,6 +98,7 @@ type
     /// Use Handle (for android, fmx) or WindowHandle (windows, fmx/vcl) or nothing
     /// </summary>
     function Init(Handle: Pointer = nil; HWND: NativeUInt = 0): Boolean; overload; virtual;
+    procedure Uninit; virtual;
     function Play: Boolean; virtual;
     function Resume: Boolean; virtual;
     procedure Pause; virtual;
@@ -135,6 +138,7 @@ type
     //Events
     property OnChangeState: TNotifyEvent read FOnChangeState write SetOnChangeState;
     property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
+    property Plugins: TFMXPlayerPlugins read FPlugins write SetPlugins;
   end;
 
   [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
@@ -170,6 +174,7 @@ type
     property PauseOnIncomingCalls default False;
     property StreamURL;
     property Version;
+    property Plugins;
     //Events
     property OnChangeState;
     property OnEnd;
@@ -185,9 +190,10 @@ uses
   Winapi.Windows,
   {$ENDIF}
   {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
-  Androidapi.JNI.App,
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net,
+  Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media,
+  Androidapi.JNI.Provider, Androidapi.Helpers, Androidapi.JNI.App, FMX.Platform,
   {$ENDIF}
   System.Math, System.SysUtils;
 
@@ -202,8 +208,7 @@ end;
 {$IFDEF ANDROID}
 procedure TFMXCustomPlayer.DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
 begin
-  case ACallState of
-    //TCallState.None:
+  case ACallState of    //TCallState.None:
 		//TCallState.Connected:
 		//TCallState.Dialing:
 		//TCallState.Disconnected:
@@ -229,6 +234,7 @@ begin
   FActiveChannel := 0;
   FVolumeChannel := 100;
   FPlayerState := TPlayerState.psNone;
+  FPlugins := TFMXPlayerPlugins.Create;
 end;
 
 function TFMXCustomPlayer.GetSystemVolume: Single;
@@ -255,8 +261,7 @@ var
 begin
 {$IFDEF ANDROID}
   AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
-  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC)
-    * AValue), 0);
+  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC) * AValue), 0);
 {$ENDIF}
 {$IFDEF MSWINDOWS}
   BASS_SetVolume(AValue);
@@ -304,8 +309,7 @@ begin
           end;
         pkStream:
           begin
-            FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or
-              BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+            FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
           end;
       end;
 
@@ -351,6 +355,12 @@ begin
     end).Start;
 end;
 
+procedure TFMXCustomPlayer.Uninit;
+begin
+  if BASS_Available and FIsInit then
+    BASS_Free;
+end;
+
 procedure TFMXCustomPlayer.UnloadChannel;
 begin
   if IsActiveChannel then
@@ -377,6 +387,11 @@ end;
 procedure TFMXCustomPlayer.SetPlayerState(const Value: TPlayerState);
 begin
   FPlayerState := Value;
+end;
+
+procedure TFMXCustomPlayer.SetPlugins(const Value: TFMXPlayerPlugins);
+begin
+  FPlugins := Value;
 end;
 
 procedure TFMXCustomPlayer.SetPosition(const Value: Int64);
@@ -606,7 +621,7 @@ begin
       if BASS_Init(Device, Freq, Flags, Handle, nil) then
     {$ENDIF}
       begin
-        BASS_PluginLoad(PChar(BASS_AAC_Lib), 0 or BASS_UNICODE);
+        FPlugins.Load;
         BASS_SetConfig(BASS_CONFIG_NET_PLAYLIST, 1);
         BASS_SetConfig(BASS_CONFIG_NET_PREBUF, 0);
         Result := True;
@@ -637,7 +652,13 @@ end;
 
 destructor TFMXCustomPlayer.Destroy;
 begin
-  UnloadChannel;
+  if not (csDesigning in ComponentState) then
+  begin
+    UnloadChannel;
+    FPlugins.Unload;
+    Uninit;
+  end;
+  FPlugins.Free;
   inherited;
 end;
 
