@@ -182,7 +182,9 @@ const
   BASS_SAMPLE_OVER_DIST = $30000; // override furthest from listener (3D only)
 
   BASS_STREAM_PRESCAN = $20000; // enable pin-point seeking/length (MP3/MP2/MP1)
+
   BASS_MP3_SETPOS = BASS_STREAM_PRESCAN;
+
   BASS_STREAM_AUTOFREE = $40000;
   // automatically free the stream when it stop/ends
   BASS_STREAM_RESTRATE = $80000;
