@@ -192,10 +192,9 @@ uses
   Winapi.Windows,
   {$ENDIF}
   {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net,
-  Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media,
-  Androidapi.JNI.Provider, Androidapi.Helpers, Androidapi.JNI.App, FMX.Platform,
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
+  Androidapi.JNI.App,
   {$ENDIF}
   System.Math, System.SysUtils;
 
@@ -266,7 +265,8 @@ begin
     Exit;
 {$IFDEF ANDROID}
   AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
-  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC) * AValue), 0);
+  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC)
+    * AValue), 0);
 {$ENDIF}
 {$IFDEF MSWINDOWS}
   BASS_SetVolume(AValue);
@@ -316,7 +316,8 @@ begin
           end;
         pkStream:
           begin
-            FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+            FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or
+              BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
           end;
       end;
 
@@ -424,14 +425,22 @@ end;
 
 procedure TFMXCustomPlayer.SetStreamURL(AUrl: string);
 begin
-  FStreamURL := AUrl;
-  FPlayKind := TPlayerPlayKind.pkStream;
+  if csDesigning in ComponentState then
+  begin
+    FPlayKind := TPlayerPlayKind.pkStream;
+    FStreamURL := AUrl;
+    Exit;
+  end;
+
+  if IsOpening then
+    Exit;
 
   if AUrl.IsEmpty then
+  begin
+    FStreamURL := AUrl;
+    Stop;
     Exit;
-
-  if csDesigning in ComponentState then
-    Exit;
+  end;
 
   if FStreamURL = AUrl then
   begin
@@ -439,6 +448,9 @@ begin
       Play;
     Exit;
   end;
+
+  FPlayKind := TPlayerPlayKind.pkStream;
+  FStreamURL := AUrl;
 
   if FAutoplay then
     if FAsync then
