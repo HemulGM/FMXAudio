@@ -46,6 +46,7 @@ type
     FVolumeChannel: Single;
     FPlugins: TFMXPlayerPlugins;
     FStarting: Boolean;
+    FUseDefaultDevice: Boolean;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
     function GetIsActiveChannel: Boolean;
@@ -83,6 +84,7 @@ type
     procedure SetVolumeChannel(const Value: Single);
     procedure UnloadChannel;
     procedure SetPlugins(const Value: TFMXPlayerPlugins);
+    procedure SetUseDefaultDevice(const Value: Boolean);
   protected
     procedure SetFileName(const Value: string); virtual;
     procedure SetStreamURL(AUrl: string); virtual;
@@ -136,6 +138,7 @@ type
     property SystemVolume: Single read GetSystemVolume write SetSystemVolume;
     property Version: string read GetVersion;
     property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
+    property UseDefaultDevice: Boolean read FUseDefaultDevice write SetUseDefaultDevice;
     //Events
     property OnChangeState: TNotifyEvent read FOnChangeState write SetOnChangeState;
     property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
@@ -176,6 +179,7 @@ type
     property StreamURL;
     property Version;
     property Plugins;
+    property UseDefaultDevice default True;
     //Events
     property OnChangeState;
     property OnEnd;
@@ -228,6 +232,7 @@ constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
   Player := Self;
+  FUseDefaultDevice := True;
   FStarting := False;
   FKeepPlayChannel := False;
   FDevice := -1;
@@ -271,6 +276,11 @@ begin
 {$IFDEF MSWINDOWS}
   BASS_SetVolume(AValue);
 {$ENDIF}
+end;
+
+procedure TFMXCustomPlayer.SetUseDefaultDevice(const Value: Boolean);
+begin
+  FUseDefaultDevice := Value;
 end;
 
 procedure TFMXCustomPlayer.DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
@@ -647,6 +657,8 @@ begin
   Result := False;
   if BASS_Available then
   begin
+    if FUseDefaultDevice then
+      BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, 1);
     {$IFDEF MSWINDOWS}
     if BASS_Init(Device, Freq, Flags, HWND, nil) then
     {$ENDIF}
