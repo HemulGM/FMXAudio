@@ -10,11 +10,12 @@ procedure Register;
 implementation
 
 uses
-  FMX.Player;
+  FMX.BassComponents;
 
 procedure Register;
 begin
   RegisterComponents('Bass Audio HGM', [TFMXPlayer]);
+  RegisterComponents('Bass Audio HGM', [TBassRecorder]);
 end;
 
 end.
