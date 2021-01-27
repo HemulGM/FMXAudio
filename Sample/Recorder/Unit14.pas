@@ -3,9 +3,11 @@ unit Unit14;
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, FMX.Types, FMX.Controls, FMX.Forms,
-  FMX.Graphics, FMX.Dialogs, FMX.BassComponents, FMX.Recorder, FMX.Controls.Presentation, FMX.StdCtrls,
-  System.Generics.Collections, FMX.Edit, FMX.ListBox;
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
+  FMX.BassComponents, FMX.Recorder, FMX.Controls.Presentation, FMX.StdCtrls,
+  System.Generics.Collections, FMX.Edit, FMX.ListBox, FMX.BASS.Classes,
+  FMX.Player;
 
 type
   TForm14 = class(TForm)
@@ -17,6 +19,7 @@ type
     ComboBoxChannels: TComboBox;
     LabelTime: TLabel;
     BassRecorder: TBassRecorder;
+    FMXPlayer1: TFMXPlayer;
     procedure FormCreate(Sender: TObject);
     procedure ButtonStopClick(Sender: TObject);
     procedure ButtonOpenFileClick(Sender: TObject);
@@ -94,12 +97,10 @@ end;
 
 procedure TForm14.FormCreate(Sender: TObject);
 begin
-  if not BassRecorder.Init(44100) then
+  if not BassRecorder.Init(Handle) then
     ShowMessage('Проблемы с инициализацией BASS')
   else
-  begin
     FillChannelList(BassRecorder.GetInputDevices);
-  end;
 end;
 
 end.

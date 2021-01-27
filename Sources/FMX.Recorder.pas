@@ -3,7 +3,8 @@ unit FMX.Recorder;
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, FMX.BASS, System.Generics.Collections;
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  FMX.BASS.Classes, FMX.BASS, System.Generics.Collections;
 
 type
   TInputDevice = record
@@ -15,7 +16,7 @@ type
 
   TOnBassRecording = procedure(Sender: TObject; Channel: DWORD; const CurrentTime: Cardinal) of object;
 
-  TCustomBassRecorder = class abstract(TComponent)
+  TCustomBassRecorder = class abstract(TCustomBassComponent)
     type
       TWaveHeader = packed record
         RIFF: array[0..3] of UTF8Char;
@@ -40,13 +41,33 @@ type
     FCurrentTime: Cardinal;
     FStream: TStream;
     FOnRecording: TOnBassRecording;
+    FUseDefaultDevice: Boolean;
+    FFreq: Cardinal;
+    FAutoInit: Boolean;
+    FDevice: LongInt;
+    FFlags: Cardinal;
+    FIsInit: Boolean;
+    FChannels: Integer;
     function FDoOnRecording(hChannel: HRECORD; Buffer: Pointer; Size: DWord; User: Pointer): Boolean;
     procedure SetOnRecording(const Value: TOnBassRecording);
+    procedure SetAutoInit(const Value: Boolean);
+    procedure SetDevice(const Value: LongInt);
+    procedure SetFlags(const Value: Cardinal);
+    procedure SetFreq(const Value: Cardinal);
+    procedure SetUseDefaultDevice(const Value: Boolean);
+    procedure SetChannels(const Value: Integer);
   public
     function GetInputDevices: TList<TInputDevice>;
-    function Init(const Frequency: Cardinal; Device: Integer = -1): Boolean;
+    //function Init(const Frequency: Cardinal; Device: Integer = -1): Boolean;
     procedure Start(const Stream: TStream; Device: Integer = -1);
     procedure Stop(const FreeStream: Boolean = True);
+    property IsInit: Boolean read FIsInit;
+    property AutoInit: Boolean read FAutoInit write SetAutoInit;
+    property Device: LongInt read FDevice write SetDevice;
+    property Flags: Cardinal read FFlags write SetFlags;
+    property Freq: Cardinal read FFreq write SetFreq;
+    property Channels: Integer read FChannels write SetChannels;
+    property UseDefaultDevice: Boolean read FUseDefaultDevice write SetUseDefaultDevice;
     property IsRecording: Boolean read FIsRecording;
     property CurrentTime: Cardinal read FCurrentTime;
     constructor Create(AOwner: TComponent); override;
@@ -72,6 +93,12 @@ begin
   inherited;
   FCurrentTime := 0;
   InternalBaseRecorder := Self;
+
+  FUseDefaultDevice := True;
+  FChannels := 2;
+  FDevice := -1;
+  FFreq := 44100;
+  FFlags := 0;
 end;
 
 destructor TCustomBassRecorder.Destroy;
@@ -123,10 +150,53 @@ begin
   until BassResult = -1;
 end;
 
-function TCustomBassRecorder.Init(const Frequency: Cardinal; Device: Integer): Boolean;
+function TCustomBassRecorder.Init(Handle: Pointer; HWND: NativeUInt): Boolean;
 begin
-  Result := BASS_Init(Device, Frequency, BASS_DEVICE_LATENCY, 0, nil);
-  BASS_RecordInit(Device);
+  Result := False;
+  if BASS_Available then
+  begin
+    if FUseDefaultDevice then
+      BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, 1);
+    {$IFDEF MSWINDOWS}
+    if BASS_Init(Device, Freq, Flags, HWND, nil) then
+    {$ENDIF}
+    {$IFDEF ANDROID}
+      if BASS_Init(Device, Freq, Flags, Handle, nil) then
+    {$ENDIF}
+      begin
+        //FPlugins.Load;
+        Result := BASS_RecordInit(Device);
+      end;
+  end;
+  FIsInit := Result;
+end;
+
+procedure TCustomBassRecorder.SetAutoInit(const Value: Boolean);
+begin
+  FAutoInit := Value;
+  if not (csDesigning in ComponentState) then
+    if FAutoInit then
+      Init;
+end;
+
+procedure TCustomBassRecorder.SetChannels(const Value: Integer);
+begin
+  FChannels := Value;
+end;
+
+procedure TCustomBassRecorder.SetDevice(const Value: LongInt);
+begin
+  FDevice := Value;
+end;
+
+procedure TCustomBassRecorder.SetFlags(const Value: Cardinal);
+begin
+  FFlags := Value;
+end;
+
+procedure TCustomBassRecorder.SetFreq(const Value: Cardinal);
+begin
+  FFreq := Value;
 end;
 
 procedure TCustomBassRecorder.SetOnRecording(const Value: TOnBassRecording);
@@ -134,11 +204,14 @@ begin
   FOnRecording := Value;
 end;
 
+procedure TCustomBassRecorder.SetUseDefaultDevice(const Value: Boolean);
+begin
+  FUseDefaultDevice := Value;
+end;
+
 procedure TCustomBassRecorder.Start(const Stream: TStream; Device: Integer);
 const
   PCMHeader = 1;
-  Freq = 44100;
-  Channels = 2;
 var
   WaveHdr: TWaveHeader;
 begin

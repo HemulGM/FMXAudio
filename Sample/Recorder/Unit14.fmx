@@ -65,4 +65,9 @@ object Form14: TForm14
     Left = 152
     Top = 128
   end
+  object FMXPlayer1: TFMXPlayer
+    AutoInit = True
+    Left = 232
+    Top = 128
+  end
 end

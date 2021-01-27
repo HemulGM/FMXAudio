@@ -6,7 +6,8 @@ uses
   {$IFDEF ANDROID}
   FMX.PhoneDialer,
   {$ENDIF}
-  FMX.Types, FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins, System.Classes;
+  FMX.BASS.Classes, FMX.Types, FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins,
+  System.Classes;
 
 type
   TFFTData = array[0..512] of Single;
@@ -19,7 +20,7 @@ type
 
   TOnChangePosition = procedure(Sender: TObject; const Time: Int64) of object;
 
-  TFMXCustomPlayer = class abstract(TComponent)
+  TFMXCustomPlayer = class abstract(TCustomBassComponent)
   protected
     FActiveChannel: HSTREAM;
     FAutoInit: Boolean;
@@ -37,7 +38,6 @@ type
     FFlags: Cardinal;
     FFreq: Cardinal;
     FKeepPlayChannel: Boolean;
-    FLastErrorCode: Integer;
     FOnChangeState: TNotifyEvent;
     FOnEnd: TNotifyEvent;
     FPauseOnIncomingCalls: Boolean;
@@ -66,7 +66,6 @@ type
     function GetSizeAsBuffer: Int64;
     function GetSizeByte: Int64;
     function GetSystemVolume: Single;
-    function GetVersion: string;
     procedure DoChangeState;
     procedure DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
     procedure DoPlayerState(const Value: TPlayerState);
@@ -131,7 +130,6 @@ type
     property IsPause: Boolean read GetIsPause;
     property IsPlay: Boolean read GetIsPlay;
     property KeepPlayChannel: Boolean read FKeepPlayChannel write SetKeepPlayChannel;
-    property LastErrorCode: Integer read FLastErrorCode;
     property PauseOnIncomingCalls: Boolean read FPauseOnIncomingCalls write SetPauseOnIncomingCalls;
     property PlayKind: TPlayerPlayKind read FPlayKind;
     property Position: Int64 read GetPosition write SetPosition;
@@ -145,7 +143,6 @@ type
     property State: TPlayerState read FPlayerState write SetPlayerState;
     property StreamURL: string read FStreamURL write SetStreamURL;
     property SystemVolume: Single read GetSystemVolume write SetSystemVolume;
-    property Version: string read GetVersion;
     property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
     property UseDefaultDevice: Boolean read FUseDefaultDevice write SetUseDefaultDevice;
     property PositionInterval: Integer read FPositionInterval write SetPositionInterval;
@@ -167,9 +164,10 @@ uses
   Winapi.Windows,
   {$ENDIF}
   {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
-  Androidapi.JNI.App,
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net,
+  Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media,
+  Androidapi.JNI.Provider, Androidapi.Helpers, Androidapi.JNI.App,
   {$ENDIF}
   System.Math, System.SysUtils;
 
@@ -646,11 +644,6 @@ begin
   M := S div 60;
   S := S mod 60;
   Result := Format('%d:%.2d', [M, S]);
-end;
-
-function TFMXCustomPlayer.GetVersion: string;
-begin
-  Result := BASSVERSIONTEXT;
 end;
 
 function TFMXCustomPlayer.Init(Handle: Pointer; HWND: NativeUInt): Boolean;

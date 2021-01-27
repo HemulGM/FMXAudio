@@ -123,6 +123,7 @@
         <DCCReference Include="Sources\FMX.BASS.Plugins.pas"/>
         <DCCReference Include="Sources\FMX.Recorder.pas"/>
         <DCCReference Include="Sources\FMX.BassComponents.pas"/>
+        <DCCReference Include="Sources\FMX.BASS.Classes.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -160,7 +161,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\FMXAudioHGM.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\..\..\Public\Documents\Embarcadero\Studio\20.0\Bpl\FMXAudioHGM.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>FMXAudioHGM.bpl</RemoteName>
                         <Overwrite>true</Overwrite>

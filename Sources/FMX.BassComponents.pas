@@ -51,6 +51,12 @@ type
   [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
   TBassRecorder = class(TCustomBassRecorder)
   published
+    property AutoInit default False;
+    property Device default -1;
+    property Flags default 0;
+    property Freq default 44100;
+    property Channels default 2;
+    property Version;
     property OnRecording;
   end;
 

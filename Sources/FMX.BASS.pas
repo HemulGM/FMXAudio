@@ -1044,8 +1044,11 @@ end;
 
 procedure UnloadBassDLL;
 begin
-  BASS_Free;
-  FreeLibrary(FBassDLL);
+  if BASS_Available then
+  begin
+    BASS_Free;
+    FreeLibrary(FBassDLL);
+  end;
 end;
 
 {$IFDEF MSWINDOWS}

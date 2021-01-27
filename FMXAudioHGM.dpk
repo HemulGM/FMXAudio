@@ -38,7 +38,8 @@ contains
   FMXAudioHGM.Reg in 'FMXAudioHGM.Reg.pas',
   FMX.BASS.Plugins in 'Sources\FMX.BASS.Plugins.pas',
   FMX.Recorder in 'Sources\FMX.Recorder.pas',
-  FMX.BassComponents in 'Sources\FMX.BassComponents.pas';
+  FMX.BassComponents in 'Sources\FMX.BassComponents.pas',
+  FMX.BASS.Classes in 'Sources\FMX.BASS.Classes.pas';
 
 end.
 
