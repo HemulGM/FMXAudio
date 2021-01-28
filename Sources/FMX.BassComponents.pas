@@ -28,7 +28,8 @@ type
     //Props
     property Async default False;
     property AutoInit default False;
-    property Autoplay default False;
+    property AutoFree default True;
+    property AutoPlay default False;
     property BassLibrary;
     property FileName;
     property KeepPlayChannel default False;

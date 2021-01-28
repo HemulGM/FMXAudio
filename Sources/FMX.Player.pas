@@ -30,7 +30,7 @@ type
     {$ENDIF}
   private
     FAsync: Boolean;
-    FAutoplay: Boolean;
+    FAutoPlay: Boolean;
     FFileName: string;
     FKeepPlayChannel: Boolean;
     FOnChangeState: TNotifyEvent;
@@ -45,6 +45,7 @@ type
     FTimer: TTimer;
     FOnChangePosition: TOnChangePosition;
     FPositionInterval: Integer;
+    FAutoFree: Boolean;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
     function GetIsActiveChannel: Boolean;
@@ -63,7 +64,7 @@ type
     procedure DoPlayerState(const Value: TPlayerState);
     procedure FUpdateChannelVolume;
     procedure SetAsync(const Value: Boolean);
-    procedure SetAutoplay(const Value: Boolean);
+    procedure SetAutoPlay(const Value: Boolean);
     procedure SetKeepPlayChannel(const Value: Boolean);
     procedure SetOnChangeState(const Value: TNotifyEvent);
     procedure SetOnEnd(const Value: TNotifyEvent);
@@ -75,6 +76,7 @@ type
     procedure SetVolumeChannel(const Value: Single);
     procedure SetOnChangePosition(const Value: TOnChangePosition);
     procedure SetPositionInterval(const Value: Integer);
+    procedure SetAutoFree(const Value: Boolean);
   protected
     procedure FOnTimer(Sender: TObject);
     procedure SetFileName(const Value: string); virtual;
@@ -98,7 +100,8 @@ type
     procedure UnloadChannel;
     //Props
     property Async: Boolean read FAsync write SetAsync;
-    property Autoplay: Boolean read FAutoplay write SetAutoplay;
+    property AutoPlay: Boolean read FAutoPlay write SetAutoPlay;
+    property AutoFree: Boolean read FAutoFree write SetAutoFree;
     property Bufferring: Int64 read GetBufferring;
     property BufferringPercent: Extended read GetBufferringPercent;
     property FileName: string read FFileName write SetFileName;
@@ -180,6 +183,7 @@ begin
   FTimer.Interval := FPositionInterval;
   FTimer.OnTimer := FOnTimer;
   FStarting := False;
+  FAutoFree := True;
   FKeepPlayChannel := False;
   FActiveChannel := 0;
   FVolumeChannel := 100;
@@ -295,6 +299,7 @@ begin
   begin
     BASS_ChannelRemoveSync(FActiveChannel, FPlaySyncEnd);
     BASS_StreamFree(FActiveChannel);
+    FActiveChannel := 0;
   end;
 end;
 
@@ -361,7 +366,7 @@ begin
 
   if FStreamURL = AUrl then
   begin
-    if (FAutoplay and (not IsPlay)) then
+    if (FAutoPlay and (not IsPlay)) then
       Play;
     Exit;
   end;
@@ -369,7 +374,7 @@ begin
   FPlayKind := TPlayerPlayKind.pkStream;
   FStreamURL := AUrl;
 
-  if FAutoplay then
+  if FAutoPlay then
     if FAsync then
       PlayAsync(
         procedure(const Success: Boolean)
@@ -392,9 +397,14 @@ begin
   FAsync := Value;
 end;
 
-procedure TFMXCustomPlayer.SetAutoplay(const Value: Boolean);
+procedure TFMXCustomPlayer.SetAutoFree(const Value: Boolean);
 begin
-  FAutoplay := Value;
+  FAutoFree := Value;
+end;
+
+procedure TFMXCustomPlayer.SetAutoPlay(const Value: Boolean);
+begin
+  FAutoPlay := Value;
 end;
 
 procedure TFMXCustomPlayer.SetFileName(const Value: string);
@@ -403,7 +413,7 @@ begin
   FPlayKind := TPlayerPlayKind.pkFile;
 
   if not (csDesigning in ComponentState) then
-    if FAutoplay then
+    if FAutoPlay then
       if FAsync then
         PlayAsync
       else
@@ -590,11 +600,13 @@ end;
 
 procedure TFMXCustomPlayer.DoChangeState;
 begin
+  FTimer.Enabled := FPlayerState in [TPlayerState.psPlay, TPlayerState.psOpening];
+  if IsActiveChannel and FAutoFree then
+    UnloadChannel;
   if Assigned(FOnChangeState) then
     TThread.ForceQueue(nil,
       procedure
       begin
-        FTimer.Enabled := FPlayerState in [TPlayerState.psPlay, TPlayerState.psOpening];
         FOnChangeState(Self);
       end);
 end;

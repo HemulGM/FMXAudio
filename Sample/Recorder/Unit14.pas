@@ -20,6 +20,8 @@ type
     FMXPlayer1: TFMXPlayer;
     ButtonPlay: TButton;
     ButtonStopPlay: TButton;
+    StyleBook1: TStyleBook;
+    CornerButton1: TCornerButton;
     procedure FormCreate(Sender: TObject);
     procedure ButtonStopClick(Sender: TObject);
     procedure ButtonOpenFileClick(Sender: TObject);
