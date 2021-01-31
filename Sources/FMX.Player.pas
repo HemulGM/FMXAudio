@@ -6,8 +6,7 @@ uses
   {$IFDEF ANDROID}
   FMX.PhoneDialer,
   {$ENDIF}
-  FMX.BASS.Classes, FMX.Types, FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins,
-  System.Classes;
+  FMX.BASS.Classes, FMX.Types, FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins, System.Classes;
 
 type
   TFFTData = array[0..512] of Single;
@@ -140,10 +139,9 @@ uses
   Winapi.Windows,
   {$ENDIF}
   {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net,
-  Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media,
-  Androidapi.JNI.Provider, Androidapi.Helpers, Androidapi.JNI.App,
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
+  Androidapi.JNI.App,
   {$ENDIF}
   System.Math, System.SysUtils;
 
@@ -601,7 +599,7 @@ end;
 procedure TFMXCustomPlayer.DoChangeState;
 begin
   FTimer.Enabled := FPlayerState in [TPlayerState.psPlay, TPlayerState.psOpening];
-  if IsActiveChannel and FAutoFree then
+  if IsActiveChannel and (FPlayerState in [psStop, psError]) and FAutoFree then
     UnloadChannel;
   if Assigned(FOnChangeState) then
     TThread.ForceQueue(nil,
