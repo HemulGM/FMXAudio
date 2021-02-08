@@ -36,6 +36,7 @@ type
     property PauseOnIncomingCalls default False;
     property StreamURL;
     property PositionInterval default 1000;
+    property VolumeFading default False;
     //Events
     property OnChangeState;
     property OnChangePosition;

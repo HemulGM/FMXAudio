@@ -40,11 +40,18 @@ type
     FPlaySyncEnd: HSYNC;
     FStreamURL: string;
     FVolumeChannel: Single;
+    FVolumeChannelRate: Single;
+    FVolumeChannelRateChanging: Boolean;
+    FVolumeChannelRateUp: Boolean;
     FStarting: Boolean;
     FTimer: TTimer;
     FOnChangePosition: TOnChangePosition;
     FPositionInterval: Integer;
     FAutoFree: Boolean;
+    FVolumeFading: Boolean;
+    FVolumeFadingWork: Boolean;
+    FVolumeFadingDoPause: Boolean;
+    FVolumeFadingDoStop: Boolean;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
     function GetIsActiveChannel: Boolean;
@@ -76,6 +83,10 @@ type
     procedure SetOnChangePosition(const Value: TOnChangePosition);
     procedure SetPositionInterval(const Value: Integer);
     procedure SetAutoFree(const Value: Boolean);
+    procedure SetVolumeFading(const Value: Boolean);
+    procedure FStartVolumeFading;
+    procedure FVolumeFadeUp(const FromCurrent: Boolean);
+    procedure FVolumeFadeDown(const FromCurrent: Boolean);
   protected
     procedure FOnTimer(Sender: TObject);
     procedure SetFileName(const Value: string); virtual;
@@ -122,6 +133,7 @@ type
     property StreamURL: string read FStreamURL write SetStreamURL;
     property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
     property PositionInterval: Integer read FPositionInterval write SetPositionInterval;
+    property VolumeFading: Boolean read FVolumeFading write SetVolumeFading;
     //Events
     property OnChangeState: TNotifyEvent read FOnChangeState write SetOnChangeState;
     property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
@@ -171,6 +183,78 @@ begin
 end;
 {$ENDIF}
 
+procedure TFMXCustomPlayer.FVolumeFadeUp;
+begin
+  if not FromCurrent then
+    FVolumeChannelRate := 0;
+  FVolumeChannelRateUp := True;
+  FVolumeChannelRateChanging := True;
+end;
+
+procedure TFMXCustomPlayer.FVolumeFadeDown;
+begin
+  if not FromCurrent then
+    FVolumeChannelRate := 0;
+  FVolumeChannelRateUp := False;
+  FVolumeChannelRateChanging := True;
+end;
+
+procedure TFMXCustomPlayer.FStartVolumeFading;
+begin
+  if not (csDesigning in ComponentState) then
+  begin
+    TThread.CreateAnonymousThread(
+      procedure
+      begin
+        FVolumeFadingWork := True;
+        try
+          while FVolumeFading and (not (csDestroying in ComponentState)) do
+          begin
+            if FVolumeChannelRateChanging then
+            begin
+              if FVolumeChannelRateUp then
+              begin
+                FVolumeChannelRate := FVolumeChannelRate + 0.2;
+                if FVolumeChannelRate >= 1 then
+                begin
+                  FVolumeChannelRate := 1;
+                  FVolumeChannelRateChanging := False;
+                end;
+              end
+              else
+              begin
+                FVolumeChannelRate := FVolumeChannelRate - 0.2;
+                if FVolumeChannelRate <= 0 then
+                begin
+                  FVolumeChannelRate := 0;
+                  FVolumeChannelRateChanging := False;
+                  if IsActiveChannel then
+                  begin
+                    if FVolumeFadingDoPause then
+                      BASS_ChannelPause(FActiveChannel)
+                    else if FVolumeFadingDoStop then
+                      BASS_ChannelStop(FActiveChannel);
+                  end;
+                end;
+              end;
+              TThread.ForceQueue(nil,
+                procedure
+                begin
+                  FUpdateChannelVolume;
+                end);
+              Sleep(100);
+            end
+            else
+              Sleep(500);
+          end;
+        except
+          //
+        end;
+        FVolumeFadingWork := False;
+      end).Start;
+  end;
+end;
+
 constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
@@ -185,6 +269,9 @@ begin
   FKeepPlayChannel := False;
   FActiveChannel := 0;
   FVolumeChannel := 100;
+  FVolumeFadingWork := False;
+  FVolumeChannelRate := 1;
+  FVolumeChannelRateChanging := False;
   FPlayerState := TPlayerState.psNone;
 end;
 
@@ -220,7 +307,7 @@ begin
     Exit;
   if IsActiveChannel then
   begin
-    BASS_ChannelSetAttribute(FActiveChannel, BASS_ATTRIB_VOL, FVolumeChannel / 100);
+    BASS_ChannelSetAttribute(FActiveChannel, BASS_ATTRIB_VOL, (FVolumeChannel * FVolumeChannelRate) / 100);
   end;
 end;
 
@@ -247,7 +334,10 @@ begin
 
       if IsActiveChannel then
       begin
+        if FVolumeFading then
+          FVolumeFadeUp(False);
         FUpdateChannelVolume;
+
         if BASS_ChannelPlay(FActiveChannel, False) then
         begin
           FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, nil);
@@ -305,9 +395,36 @@ procedure TFMXCustomPlayer.Pause;
 begin
   if IsActiveChannel then
   begin
-    BASS_ChannelPause(FActiveChannel);
+    if FVolumeFading then
+    begin
+      FVolumeFadingDoStop := False;
+      FVolumeFadingDoPause := True;
+      FVolumeFadeDown(True);
+    end
+    else
+    begin
+      BASS_ChannelPause(FActiveChannel);
+    end;
     DoPlayerState(TPlayerState.psPause);
   end;
+end;
+
+procedure TFMXCustomPlayer.Stop;
+begin
+  if IsActiveChannel then
+  begin
+    if FVolumeFading then
+    begin
+      FVolumeFadingDoPause := False;
+      FVolumeFadingDoStop := True;
+      FVolumeFadeDown(True);
+    end
+    else
+    begin
+      BASS_ChannelStop(FActiveChannel);
+    end;
+  end;
+  DoPlayerState(TPlayerState.psStop);
 end;
 
 procedure TFMXCustomPlayer.SetPauseOnIncomingCalls(Value: Boolean);
@@ -429,11 +546,16 @@ begin
   FUpdateChannelVolume;
 end;
 
-procedure TFMXCustomPlayer.Stop;
+procedure TFMXCustomPlayer.SetVolumeFading(const Value: Boolean);
 begin
-  if IsActiveChannel then
-    BASS_ChannelStop(FActiveChannel);
-  DoPlayerState(TPlayerState.psStop);
+  FVolumeFading := Value;
+  if FVolumeFading then
+    FVolumeChannelRate := 0
+  else
+    FVolumeChannelRate := 1;
+  if not (csDesigning in ComponentState) then
+    if FVolumeFading then
+      FStartVolumeFading;
 end;
 
 procedure TFMXCustomPlayer.SwitchPlay;
@@ -580,6 +702,9 @@ begin
   begin
     UnloadChannel;
   end;
+  FVolumeFading := False;
+  while FVolumeFadingWork do
+    TThread.Yield;
   inherited;
 end;
 
@@ -598,7 +723,11 @@ end;
 
 procedure TFMXCustomPlayer.DoChangeState;
 begin
-  FTimer.Enabled := FPlayerState in [TPlayerState.psPlay, TPlayerState.psOpening];
+  TThread.ForceQueue(nil,
+    procedure
+    begin
+      FTimer.Enabled := FPlayerState in [TPlayerState.psPlay, TPlayerState.psOpening];
+    end);
   if IsActiveChannel and (FPlayerState in [psStop, psError]) and FAutoFree then
     UnloadChannel;
   if Assigned(FOnChangeState) then
@@ -613,6 +742,8 @@ function TFMXCustomPlayer.Resume: Boolean;
 begin
   if IsActiveChannel and BASS_ChannelPlay(FActiveChannel, False) then
   begin
+    if FVolumeFading then
+      FVolumeFadeUp(True);
     DoPlayerState(TPlayerState.psPlay);
     Result := True;
   end
