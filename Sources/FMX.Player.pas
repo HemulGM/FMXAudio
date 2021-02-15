@@ -146,16 +146,7 @@ var
 implementation
 
 uses
-  FMX.platform,
-  {$IFDEF MSWINDOWS}
-  Winapi.Windows,
-  {$ENDIF}
-  {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
-  Androidapi.JNI.App,
-  {$ENDIF}
-  System.Math, System.SysUtils;
+  FMX.platform, System.Math, System.SysUtils;
 
 procedure FSyncEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
 begin
