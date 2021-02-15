@@ -61,6 +61,17 @@ type
 
 implementation
 
+uses
+  {$IFDEF MSWINDOWS}
+  Winapi.Windows,
+  {$ENDIF}
+  {$IFDEF ANDROID}
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
+  Androidapi.JNI.App,
+  {$ENDIF}
+  System.SysUtils;
+
 { TBassLibrary }
 
 destructor TBassLibrary.Destroy;
