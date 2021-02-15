@@ -1,4 +1,4 @@
-program Project21;
+program MicRecordSample;
 
 uses
   System.StartUpCopy,
