@@ -58,8 +58,8 @@ object Form14: TForm14
     TabOrder = 6
   end
   object SaveDialog: TSaveDialog
-    Left = 160
-    Top = 256
+    Left = 80
+    Top = 208
   end
   object ButtonPlay: TButton
     Position.X = 280.000000000000000000
@@ -89,17 +89,6 @@ object Form14: TForm14
     TextSettings.Font.Size = 50.000000000000000000
     XRadius = 80.000000000000000000
     YRadius = 80.000000000000000000
-  end
-  object BassRecorder: TBassRecorder
-    AutoInit = True
-    OnRecording = BassRecorderRecording
-    Left = 160
-    Top = 336
-  end
-  object FMXPlayer1: TFMXPlayer
-    AutoInit = True
-    Left = 248
-    Top = 336
   end
   object StyleBook1: TStyleBook
     Styles = <
@@ -32955,7 +32944,18 @@ object Form14: TForm14
           0708636C6157686974650B4E6F726D616C436F6C6F720708636C615768697465
           0C50726573736564436F6C6F720708636C615768697465000000}
       end>
-    Left = 248
-    Top = 256
+    Left = 352
+    Top = 216
+  end
+  object BassRecorder: TBassRecorder
+    AutoInit = True
+    OnRecording = BassRecorderRecording
+    Left = 80
+    Top = 368
+  end
+  object FMXPlayer1: TFMXPlayer
+    AutoInit = True
+    Left = 352
+    Top = 360
   end
 end
