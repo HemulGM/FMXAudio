@@ -4,7 +4,8 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics, Vcl.Controls,
-  Vcl.Forms, Vcl.Dialogs, FMX.Player, Vcl.StdCtrls;
+  Vcl.Forms, Vcl.Dialogs, FMX.Player, Vcl.StdCtrls, FMX.BASS.Classes,
+  FMX.BassComponents;
 
 type
   TForm2 = class(TForm)
