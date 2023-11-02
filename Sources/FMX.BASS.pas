@@ -930,14 +930,27 @@ end;
 
 function BASS_Lib: string;
 begin
+  {$IFDEF MSWINDOWS}
   Result := BASS_FOLDER + bassdll;
+  {$ELSE}
+  Result := bassdll;
+  {$ENDIF}
 end;
 
 procedure LoadBassDLL;
 begin
   FBassDLL := LoadLibrary(PChar(BASS_Lib));
+  {$IFDEF MSWINDOWS}
   if FBassDLL = 0 then
     Exit;
+  {$ELSE}
+  if FBassDLL = 0 then
+  begin
+    FBassDLL := SafeLoadLibrary(TPath.Combine(TPath.GetLibraryPath, BASS_Lib));
+    if FBassDLL = 0 then
+      Exit;
+  end;
+  {$ENDIF}
 
   BASS_SetConfig := GetProcAddress(FBassDLL, 'BASS_SetConfig');
   BASS_GetConfig := GetProcAddress(FBassDLL, 'BASS_GetConfig');
