@@ -6,7 +6,8 @@ uses
   {$IFDEF ANDROID}
   FMX.PhoneDialer,
   {$ENDIF}
-  FMX.BASS.Classes, FMX.Types, FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins, System.Classes;
+  FMX.BASS.Classes, FMX.Types, FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins,
+  System.Classes;
 
 type
   TFFTData = array[0..512] of Single;
@@ -41,6 +42,7 @@ type
     FStreamURL: string;
     FVolumeChannel: Single;
     FStarting: Boolean;
+    FInQueue: Boolean;
     FTimer: TTimer;
     FOnChangePosition: TOnChangePosition;
     FPositionInterval: Integer;
@@ -128,19 +130,10 @@ type
     property OnChangePosition: TOnChangePosition read FOnChangePosition write SetOnChangePosition;
   end;
 
-var
-  Player: TFMXCustomPlayer;
-
 implementation
 
 uses
   FMX.platform, System.Math, System.SysUtils;
-
-procedure FSyncEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
-begin
-  if Assigned(Player) then
-    Player.DoOnEnd(handle, channel, data, user);
-end;
 
 { TFMXCustomPlayer }
 
@@ -165,13 +158,13 @@ end;
 constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
-  Player := Self;
   FPositionInterval := 1000;
   FTimer := TTimer.Create(Self);
   FTimer.Enabled := False;
   FTimer.Interval := FPositionInterval;
   FTimer.OnTimer := FOnTimer;
   FStarting := False;
+  FInQueue := False;
   FAutoFree := True;
   FKeepPlayChannel := False;
   FActiveChannel := 0;
@@ -232,7 +225,7 @@ begin
         pkStream:
           begin
             FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or
-              BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+                BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
           end;
       end;
 
@@ -241,6 +234,11 @@ begin
         FUpdateChannelVolume;
         if BASS_ChannelPlay(FActiveChannel, False) then
         begin
+          var FSyncEnd :=
+            procedure(handle: HSYNC; channel, data: Cardinal; user: Pointer)
+            begin
+              DoOnEnd(handle, channel, data, user);
+            end;
           FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, nil);
           DoPlayerState(TPlayerState.psPlay);
           Result := True;
@@ -265,20 +263,30 @@ begin
     var
       Success: Boolean;
     begin
+      if FInQueue then
+        Exit;
       while FStarting do
+      begin
+        FInQueue := True;
         Sleep(100);
+      end;
+      FInQueue := False;
       FStarting := True;
       try
-        Success := Play;
+        try
+          Success := Play;
+        except
+          Success := False;
+        end;
+      finally
         if Assigned(ResultMethod) then
-          TThread.Synchronize(nil,
+          TThread.Queue(nil,
             procedure
             begin
               ResultMethod(Success);
             end);
-      except
+        FStarting := False;
       end;
-      FStarting := False;
     end).Start;
 end;
 
