@@ -140,10 +140,11 @@ uses
 {$IFDEF ANDROID}
 procedure TFMXCustomPlayer.DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
 begin
-  case ACallState of    //TCallState.None:
-		//TCallState.Connected:
-		//TCallState.Dialing:
-		//TCallState.Disconnected:
+  case ACallState of
+    //TCallState.None:
+    //TCallState.Connected:
+    //TCallState.Dialing:
+    //TCallState.Disconnected:
     TCallState.Incoming:
       begin
         if FPauseOnIncomingCalls then

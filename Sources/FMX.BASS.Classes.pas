@@ -95,8 +95,7 @@ begin
   AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
   Result := AudioManager.getStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
   Result := Result / AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
-{$ENDIF}
-{$IFDEF MSWINDOWS}
+{$ELSE}
   Result := BASS_GetVolume;
 {$ENDIF}
 end;
@@ -111,8 +110,8 @@ begin
     {$IFDEF MSWINDOWS}
     if BASS_Init(Device, Freq, Flags, HWND, nil) then
     {$ENDIF}
-    {$IFDEF ANDROID}
-      if BASS_Init(Device, Freq, Flags, Handle, nil) then
+    {$IFDEF POSIX}
+    if BASS_Init(Device, Freq, Flags, Handle, nil) then
     {$ENDIF}
       begin
         FPlugins.Load;
@@ -177,8 +176,7 @@ begin       {
   AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
   AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC)
     * AValue), 0);
-{$ENDIF}
-{$IFDEF MSWINDOWS}
+{$ELSE}
   BASS_SetVolume(AValue);
 {$ENDIF}
 end;
