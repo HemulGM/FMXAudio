@@ -6,8 +6,8 @@ uses
   {$IFDEF ANDROID}
   FMX.PhoneDialer,
   {$ENDIF}
-  FMX.BASS.Classes, FMX.Types, FMX.BASS, FMX.BASS.AAC, FMX.BASS.Plugins,
-  System.Classes;
+  FMX.BASS.Classes, System.Types, FMX.Types, FMX.BASS, FMX.BASS.AAC,
+  FMX.BASS.Plugins, System.Classes;
 
 type
   TFFTData = array[0..512] of Single;
@@ -99,6 +99,8 @@ type
     procedure Stop; virtual;
     procedure SwitchPlay;
     procedure UnloadChannel;
+    procedure QuickPlayResource(const ResourceName: string);
+    procedure QuickPlayFile(const FileName: string);
     //Props
     property Async: Boolean read FAsync write SetAsync;
     property AutoPlay: Boolean read FAutoPlay write SetAutoPlay;
@@ -289,6 +291,29 @@ begin
         FStarting := False;
       end;
     end).Start;
+end;
+
+procedure TFMXCustomPlayer.QuickPlayFile(const FileName: string);
+begin
+  if BassLibrary.IsInit then
+  begin
+    var Ch := BASS_StreamCreateFile(False, PChar(FileName), 0, 0, BASS_UNICODE);
+    BASS_ChannelPlay(Ch, False);
+  end;
+end;
+
+procedure TFMXCustomPlayer.QuickPlayResource(const ResourceName: string);
+begin
+  if BassLibrary.IsInit then
+  begin
+    var Res := TResourceStream.Create(HInstance, ResourceName, RT_RCDATA);
+    try
+      var Ch := BASS_StreamCreateFile(True, Res.Memory, 0, Res.Size, BASS_STREAM_AUTOFREE);
+      BASS_ChannelPlay(Ch, False);
+    finally
+      Res.Free;
+    end;
+  end;
 end;
 
 procedure TFMXCustomPlayer.UnloadChannel;
