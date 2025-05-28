@@ -137,9 +137,14 @@ implementation
 uses
   FMX.platform, System.Math, System.SysUtils;
 
+procedure FSyncEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer); stdcall;
+begin
+  TFMXCustomPlayer(user).DoOnEnd(handle, channel, data, user);
+end;
 { TFMXCustomPlayer }
 
 {$IFDEF ANDROID}
+
 procedure TFMXCustomPlayer.DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
 begin
   case ACallState of
@@ -177,11 +182,11 @@ end;
 
 procedure TFMXCustomPlayer.DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
 begin
-  DoPlayerState(TPlayerState.psStop);
   if Assigned(FOnEnd) then
     TThread.ForceQueue(nil,
       procedure
       begin
+        DoPlayerState(TPlayerState.psStop);
         FOnEnd(Self);
       end);
 end;
@@ -237,12 +242,7 @@ begin
         FUpdateChannelVolume;
         if BASS_ChannelPlay(FActiveChannel, False) then
         begin
-          var FSyncEnd :=
-            procedure(handle: HSYNC; channel, data: Cardinal; user: Pointer)
-            begin
-              DoOnEnd(handle, channel, data, user);
-            end;
-          FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, nil);
+          FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, Self);
           DoPlayerState(TPlayerState.psPlay);
           Result := True;
         end;
