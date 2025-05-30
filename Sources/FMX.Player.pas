@@ -6,8 +6,7 @@ uses
   {$IFDEF ANDROID}
   FMX.PhoneDialer,
   {$ENDIF}
-  FMX.BASS.Classes, System.Types, FMX.Types, FMX.BASS, FMX.BASS.AAC,
-  FMX.BASS.Plugins, System.Classes;
+  FMX.BASS.Classes, System.Types, FMX.Types, FMX.BASS, System.Classes;
 
 type
   TFFTData = array[0..512] of Single;
@@ -47,6 +46,9 @@ type
     FOnChangePosition: TOnChangePosition;
     FPositionInterval: Integer;
     FAutoFree: Boolean;
+    FFXHandles: TArray<HFX>;
+    FFXValues: TArray<Single>;
+    FEQFrequencies: TArray<Single>;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
     function GetIsActiveChannel: Boolean;
@@ -78,11 +80,24 @@ type
     procedure SetOnChangePosition(const Value: TOnChangePosition);
     procedure SetPositionInterval(const Value: Integer);
     procedure SetAutoFree(const Value: Boolean);
+    function GetFXValue(const Index: Integer): Single;
+    procedure SetFXValue(const Index: Integer; const Value: Single);
+    procedure UpdateFX;
+    function GetEQFrequencies(const Index: Integer): Single;
+    procedure SetEQFrequencies(const Index: Integer; const Value: Single);
+    procedure CreateFX;
   protected
+    FBandWidth: Single;
     procedure FOnTimer(Sender: TObject);
     procedure SetFileName(const Value: string); virtual;
     procedure SetStreamURL(AUrl: string); virtual;
     property IsActiveChannel: Boolean read GetIsActiveChannel;
+  public
+    //fx
+    procedure SetFXBands(BandCount: integer);
+    property FXValues[const Index: Integer]: Single read GetFXValue write SetFXValue;
+    property EQFrequencies[const Index: Integer]: Single read GetEQFrequencies write SetEQFrequencies;
+    procedure ResetFX;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -141,10 +156,10 @@ procedure FSyncEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer); stdca
 begin
   TFMXCustomPlayer(user).DoOnEnd(handle, channel, data, user);
 end;
+
 { TFMXCustomPlayer }
 
 {$IFDEF ANDROID}
-
 procedure TFMXCustomPlayer.DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
 begin
   case ACallState of
@@ -163,9 +178,23 @@ begin
 end;
 {$ENDIF}
 
+procedure TFMXCustomPlayer.SetFXBands(BandCount: integer);
+begin
+  SetLength(FFXHandles, BandCount);
+  SetLength(FFXValues, BandCount);
+  SetLength(FEQFrequencies, BandCount);
+end;
+
+procedure TFMXCustomPlayer.SetFXValue(const Index: Integer; const Value: Single);
+begin
+  FFXValues[Index] := Value;
+  UpdateFX;
+end;
+
 constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
+  FBandWidth := 18;
   FPositionInterval := 1000;
   FTimer := TTimer.Create(Self);
   FTimer.Enabled := False;
@@ -216,42 +245,65 @@ begin
   end;
 end;
 
+procedure TFMXCustomPlayer.UpdateFX;
+begin
+  if (not IsActiveChannel) or (Length(FFXHandles) <= 0) then
+    Exit;
+  for var i := 0 to High(FFXValues) do
+  begin
+    var EQ: BASS_DX8_PARAMEQ;
+    EQ.fGain := FFXValues[i];
+    EQ.fBandwidth := FBandWidth;
+    EQ.fCenter := FEQFrequencies[i];
+    BASS_FXSetParameters(FFXHandles[i], @EQ);
+  end;
+end;
+
+procedure TFMXCustomPlayer.CreateFX;
+begin
+  if (not IsActiveChannel) or (Length(FFXHandles) <= 0) then
+    Exit;
+  for var i := 0 to High(FFXHandles) do
+    FFXHandles[i] := BASS_ChannelSetFX(FActiveChannel, BASS_FX_DX8_PARAMEQ, 0);
+  UpdateFX;
+end;
+
 function TFMXCustomPlayer.Play: Boolean;
 begin
   Result := False;
   try
-    if BassLibrary.IsInit and (not IsOpening) then
-    begin
-      DoPlayerState(TPlayerState.psOpening);
-      if not FKeepPlayChannel then
-        UnloadChannel;
-      case FPlayKind of
-        pkFile:
-          begin
-            FActiveChannel := BASS_StreamCreateFile(False, PChar(FFileName), 0, 0, BASS_UNICODE);
-          end;
-        pkStream:
-          begin
-            FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or
-                BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
-          end;
-      end;
-
-      if IsActiveChannel then
-      begin
-        FUpdateChannelVolume;
-        if BASS_ChannelPlay(FActiveChannel, False) then
+    if not (BassLibrary.IsInit and (not IsOpening)) then
+      Exit;
+    DoPlayerState(TPlayerState.psOpening);
+    if not FKeepPlayChannel then
+      UnloadChannel;
+    case FPlayKind of
+      pkFile:
         begin
-          FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, Self);
-          DoPlayerState(TPlayerState.psPlay);
-          Result := True;
+          FActiveChannel := BASS_StreamCreateFile(False, PChar(FFileName), 0, 0, BASS_UNICODE);
         end;
-      end
-      else
+      pkStream:
+        begin
+          FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or
+              BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+        end;
+    end;
+
+    if IsActiveChannel then
+    begin
+      CreateFX;
+      FUpdateChannelVolume;
+      if BASS_ChannelPlay(FActiveChannel, False) then
       begin
-        DoPlayerState(TPlayerState.psError);
-        BassLibrary.LastErrorCode := Bass_ErrorGetCode;
+        FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, Self);
+        DoPlayerState(TPlayerState.psPlay);
+        Result := True;
       end;
+    end
+    else
+    begin
+      DoPlayerState(TPlayerState.psError);
+      BassLibrary.LastErrorCode := Bass_ErrorGetCode;
     end;
   finally
     if IsOpening or (not Result) then
@@ -295,44 +347,42 @@ end;
 
 procedure TFMXCustomPlayer.QuickPlayFile(const FileName: string);
 begin
-  if BassLibrary.IsInit then
-  begin
-    var Ch := BASS_StreamCreateFile(False, PChar(FileName), 0, 0, BASS_UNICODE);
-    BASS_ChannelPlay(Ch, False);
-  end;
+  if not BassLibrary.IsInit then
+    Exit;
+  var Ch := BASS_StreamCreateFile(False, PChar(FileName), 0, 0, BASS_UNICODE);
+  BASS_ChannelPlay(Ch, False);
 end;
 
 procedure TFMXCustomPlayer.QuickPlayResource(const ResourceName: string);
 begin
-  if BassLibrary.IsInit then
-  begin
-    var Res := TResourceStream.Create(HInstance, ResourceName, RT_RCDATA);
-    try
-      var Ch := BASS_StreamCreateFile(True, Res.Memory, 0, Res.Size, BASS_STREAM_AUTOFREE);
-      BASS_ChannelPlay(Ch, False);
-    finally
-      Res.Free;
-    end;
+  if not BassLibrary.IsInit then
+    Exit;
+  var Res := TResourceStream.Create(HInstance, ResourceName, RT_RCDATA);
+  try
+    var Ch := BASS_StreamCreateFile(True, Res.Memory, 0, Res.Size, BASS_STREAM_AUTOFREE);
+    BASS_ChannelPlay(Ch, False);
+  finally
+    Res.Free;
   end;
 end;
 
 procedure TFMXCustomPlayer.UnloadChannel;
 begin
-  if IsActiveChannel then
-  begin
-    BASS_ChannelRemoveSync(FActiveChannel, FPlaySyncEnd);
-    BASS_StreamFree(FActiveChannel);
-    FActiveChannel := 0;
-  end;
+  if not IsActiveChannel then
+    Exit;
+  for var i := Low(FFXHandles) to High(FFXHandles) do
+    BASS_ChannelRemoveFX(FActiveChannel, FFXHandles[i]);
+  BASS_ChannelRemoveSync(FActiveChannel, FPlaySyncEnd);
+  BASS_StreamFree(FActiveChannel);
+  FActiveChannel := 0;
 end;
 
 procedure TFMXCustomPlayer.Pause;
 begin
-  if IsActiveChannel then
-  begin
-    BASS_ChannelPause(FActiveChannel);
-    DoPlayerState(TPlayerState.psPause);
-  end;
+  if not IsActiveChannel then
+    Exit;
+  BASS_ChannelPause(FActiveChannel);
+  DoPlayerState(TPlayerState.psPause);
 end;
 
 procedure TFMXCustomPlayer.SetPauseOnIncomingCalls(Value: Boolean);
@@ -347,14 +397,16 @@ end;
 
 procedure TFMXCustomPlayer.SetPosition(const Value: Int64);
 begin
-  if IsActiveChannel then
-    BASS_ChannelSetPosition(FActiveChannel, BASS_ChannelSeconds2Bytes(FActiveChannel, Value), BASS_POS_BYTE);
+  if not IsActiveChannel then
+    Exit;
+  BASS_ChannelSetPosition(FActiveChannel, BASS_ChannelSeconds2Bytes(FActiveChannel, Value), BASS_POS_BYTE);
 end;
 
 procedure TFMXCustomPlayer.SetPositionByte(const Value: Int64);
 begin
-  if IsActiveChannel then
-    BASS_ChannelSetPosition(FActiveChannel, Value, BASS_POS_BYTE);
+  if not IsActiveChannel then
+    Exit;
+  BASS_ChannelSetPosition(FActiveChannel, Value, BASS_POS_BYTE);
 end;
 
 procedure TFMXCustomPlayer.SetPositionInterval(const Value: Integer);
@@ -428,6 +480,11 @@ end;
 procedure TFMXCustomPlayer.SetAutoPlay(const Value: Boolean);
 begin
   FAutoPlay := Value;
+end;
+
+procedure TFMXCustomPlayer.SetEQFrequencies(const Index: Integer; const Value: Single);
+begin
+  FEQFrequencies[Index] := Value;
 end;
 
 procedure TFMXCustomPlayer.SetFileName(const Value: string);
@@ -509,6 +566,16 @@ begin
     Exit;
   BASS_ChannelGetData(FActiveChannel, @FFTData, BASS_DATA_FFT512);
   Result := True;
+end;
+
+function TFMXCustomPlayer.GetEQFrequencies(const Index: Integer): Single;
+begin
+  Result := FEQFrequencies[Index];
+end;
+
+function TFMXCustomPlayer.GetFXValue(const Index: Integer): Single;
+begin
+  Result := FFXValues[Index];
 end;
 
 function TFMXCustomPlayer.GetIsActiveChannel: Boolean;
@@ -632,6 +699,20 @@ begin
       begin
         FOnChangeState(Self);
       end);
+end;
+
+procedure TFMXCustomPlayer.ResetFX;
+begin
+  if (not IsActiveChannel) or (Length(FFXHandles) <= 0) then
+    Exit;
+  for var i := 0 to High(FFXHandles) do
+  begin
+    var EQ: BASS_DX8_PARAMEQ;
+    EQ.fGain := 0;
+    EQ.fBandwidth := FBandWidth;
+    EQ.fCenter := FEQFrequencies[i];
+    BASS_FXSetParameters(FFXHandles[i], @EQ);
+  end;
 end;
 
 function TFMXCustomPlayer.Resume: Boolean;

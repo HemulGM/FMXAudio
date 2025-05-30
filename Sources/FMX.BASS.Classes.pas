@@ -3,13 +3,10 @@ unit FMX.BASS.Classes;
 interface
 
 uses
-  FMX.Types, FMX.BASS, FMX.BASS.Plugins, System.Classes;
+  FMX.Types, FMX.BASS, System.Classes;
 
 type
   TBassLibrary = class(TPersistent)
-  private
-    FPlugins: TFMXPlayerPlugins;
-    procedure SetPlugins(const Value: TFMXPlayerPlugins);
   protected
     FIsInit: Boolean;
     FFlags: Cardinal;
@@ -26,7 +23,7 @@ type
     procedure SetSystemVolume(const AValue: Single); virtual;
   public
     procedure Uninit; virtual;
-    constructor Create(AOwner: TComponent);
+    constructor Create(AOwner: TComponent); virtual;
     destructor Destroy; override;
     /// <summary>
     /// Use Handle (for android, fmx) or WindowHandle (windows, fmx/vcl) or nothing
@@ -40,7 +37,6 @@ type
     property Flags: Cardinal read FFlags write SetFlags default 0;
     property Freq: Cardinal read FFreq write SetFreq default 44100;
     property UseDefaultDevice: Boolean read FUseDefaultDevice write SetUseDefaultDevice default True;
-    property Plugins: TFMXPlayerPlugins read FPlugins write SetPlugins;
     property Version: string read GetVersion;
   end;
 
@@ -53,8 +49,8 @@ type
     procedure SetAutoInit(const Value: Boolean);
     procedure SetBassLibraryInst(const Value: TBassLibrary);
   public
-    function Init(Handle: Pointer = nil; HWND: NativeUInt = 0): Boolean; virtual;
     constructor Create(AOwner: TComponent); override;
+    function Init(Handle: Pointer = nil; HWND: NativeUInt = 0): Boolean; virtual;
     property BassLibrary: TBassLibrary read FBassLibraryInst write SetBassLibraryInst;
     property AutoInit: Boolean read FAutoInit write SetAutoInit;
   end;
@@ -66,9 +62,10 @@ uses
   Winapi.Windows,
   {$ENDIF}
   {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
-  Androidapi.JNI.App,
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net,
+  Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media,
+  Androidapi.JNI.Provider, Androidapi.Helpers, Androidapi.JNI.App,
   {$ENDIF}
   System.SysUtils;
 
@@ -76,28 +73,19 @@ uses
 
 destructor TBassLibrary.Destroy;
 begin
-  //if not (csDesigning in ComponentState) then
-  begin
-    FPlugins.Unload;
-    Uninit;
-  end;
-  FPlugins.Free;
+  Uninit;
   inherited;
 end;
 
 function TBassLibrary.GetSystemVolume: Single;
-{$IFDEF ANDROID}
-var
-  AudioManager: JAudioManager;
-{$ENDIF}
 begin
-{$IFDEF ANDROID}
-  AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
+  {$IFDEF ANDROID}
+  var AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
   Result := AudioManager.getStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
   Result := Result / AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
-{$ELSE}
+  {$ELSE}
   Result := BASS_GetVolume;
-{$ENDIF}
+  {$ENDIF}
 end;
 
 function TBassLibrary.Init(Handle: Pointer; HWND: NativeUInt): Boolean;
@@ -111,10 +99,9 @@ begin
     if BASS_Init(Device, Freq, Flags, HWND, nil) then
     {$ENDIF}
     {$IFDEF POSIX}
-    if BASS_Init(Device, Freq, Flags, Handle, nil) then
+      if BASS_Init(Device, Freq, Flags, Handle, nil) then
     {$ENDIF}
       begin
-        FPlugins.Load;
         BASS_SetConfig(BASS_CONFIG_NET_PLAYLIST, 1);
         BASS_SetConfig(BASS_CONFIG_NET_PREBUF, 0);
         Result := True;
@@ -125,9 +112,8 @@ end;
 
 constructor TBassLibrary.Create(AOwner: TComponent);
 begin
-  //inherited C;
+  inherited Create;
   FUseDefaultDevice := True;
-  FPlugins := TFMXPlayerPlugins.Create;
   FDevice := -1;
   FFreq := 44100;
   FFlags := 0;
@@ -148,11 +134,6 @@ begin
   FFreq := Value;
 end;
 
-procedure TBassLibrary.SetPlugins(const Value: TFMXPlayerPlugins);
-begin
-  FPlugins := Value;
-end;
-
 procedure TBassLibrary.Uninit;
 begin
   if BASS_Available and FIsInit then
@@ -165,20 +146,13 @@ begin
 end;
 
 procedure TBassLibrary.SetSystemVolume(const AValue: Single);
-{$IFDEF ANDROID}
-var
-  AudioManager: JAudioManager;
-{$ENDIF}
-begin       {
-  if csDesigning in ComponentState then
-    Exit;   }
-{$IFDEF ANDROID}
-  AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
-  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC)
-    * AValue), 0);
-{$ELSE}
+begin
+  {$IFDEF ANDROID}
+  var AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
+  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC) * AValue), 0);
+  {$ELSE}
   BASS_SetVolume(AValue);
-{$ENDIF}
+  {$ENDIF}
 end;
 
 procedure TBassLibrary.SetUseDefaultDevice(const Value: Boolean);
