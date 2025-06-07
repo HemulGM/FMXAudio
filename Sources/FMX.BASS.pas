@@ -80,6 +80,7 @@ const
   BASS_ERROR_CODEC = 44; // codec is not available/supported
   BASS_ERROR_ENDED = 45; // the channel/file has ended
   BASS_ERROR_BUSY = 46; // the device is busy
+  BASS_ERROR_DENIED = 49;
   BASS_ERROR_UNKNOWN = -1; // some other mystery problem
 
   // BASS_SetConfig options

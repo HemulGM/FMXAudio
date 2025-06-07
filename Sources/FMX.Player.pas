@@ -1,4 +1,4 @@
-unit FMX.Player;
+﻿unit FMX.Player;
 
 interface
 
@@ -6,14 +6,15 @@ uses
   {$IFDEF ANDROID}
   FMX.PhoneDialer,
   {$ENDIF}
-  FMX.BASS.Classes, System.Types, FMX.Types, FMX.BASS, System.Classes;
+  FMX.BASS.Classes, System.Types, FMX.Types, FMX.BASS, System.Classes,
+  System.Net.HttpClient;
 
 type
   TFFTData = array[0..512] of Single;
 
-  TPlayerState = (psNone, psStop, psPlay, psPause, psOpening, psError);
+  TPlayerState = (psNone, psStop, psPlay, psPause, psOpening, psError, psEnd);
 
-  TPlayerPlayKind = (pkFile, pkStream);
+  TPlayerPlayKind = (pkFile, pkStreamUrl, pkStream);
 
   TPlayAsyncResult = reference to procedure(const Success: Boolean);
 
@@ -28,10 +29,7 @@ type
     procedure DetectIsCallStateChanged(const ACallID: string; const ACallState: TCallState);
     {$ENDIF}
   private
-    FAsync: Boolean;
-    FAutoPlay: Boolean;
     FFileName: string;
-    FKeepPlayChannel: Boolean;
     FOnChangeState: TNotifyEvent;
     FOnEnd: TNotifyEvent;
     FPauseOnIncomingCalls: Boolean;
@@ -44,18 +42,20 @@ type
     FInQueue: Boolean;
     FTimer: TTimer;
     FOnChangePosition: TOnChangePosition;
-    FPositionInterval: Integer;
     FAutoFree: Boolean;
     FFXHandles: TArray<HFX>;
     FFXValues: TArray<Single>;
     FEQFrequencies: TArray<Single>;
+    FHeaders: string;
+    FStream: TStream;
+    FAutoFreeStream: Boolean;
     function GetBufferring: Int64;
     function GetBufferringPercent: Extended;
     function GetIsActiveChannel: Boolean;
     function GetIsOpening: Boolean;
     function GetIsPause: Boolean;
     function GetIsPlay: Boolean;
-    function GetPosition: Int64;
+    function GetPositionSec: Int64;
     function GetPositionByte: Int64;
     function GetPositionPercent: Extended;
     function GetPositionTime: string;
@@ -66,19 +66,16 @@ type
     procedure DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
     procedure DoPlayerState(const Value: TPlayerState);
     procedure FUpdateChannelVolume;
-    procedure SetAsync(const Value: Boolean);
-    procedure SetAutoPlay(const Value: Boolean);
-    procedure SetKeepPlayChannel(const Value: Boolean);
     procedure SetOnChangeState(const Value: TNotifyEvent);
     procedure SetOnEnd(const Value: TNotifyEvent);
     procedure SetPauseOnIncomingCalls(Value: Boolean);
     procedure SetPlayerState(const Value: TPlayerState);
-    procedure SetPosition(const Value: Int64);
+    procedure SetPositionSec(const Value: Int64);
     procedure SetPositionByte(const Value: Int64);
     procedure SetPositionPercent(const Value: Extended);
     procedure SetVolumeChannel(const Value: Single);
     procedure SetOnChangePosition(const Value: TOnChangePosition);
-    procedure SetPositionInterval(const Value: Integer);
+    procedure SetPositionUpdateInterval(const Value: Integer);
     procedure SetAutoFree(const Value: Boolean);
     function GetFXValue(const Index: Integer): Single;
     procedure SetFXValue(const Index: Integer; const Value: Single);
@@ -86,28 +83,33 @@ type
     function GetEQFrequencies(const Index: Integer): Single;
     procedure SetEQFrequencies(const Index: Integer; const Value: Single);
     procedure CreateFX;
+    procedure SetHeaders(const Value: string);
+    procedure SetAutoFreeStream(const Value: Boolean);
+    function GetPositionUpdateInterval: Integer;
+    function GetDurationTime: string;
   protected
     FBandWidth: Single;
     procedure FOnTimer(Sender: TObject);
     procedure SetFileName(const Value: string); virtual;
-    procedure SetStreamURL(AUrl: string); virtual;
+    procedure SetStreamURL(const Value: string); virtual;
+    procedure SetStream(const Value: TStream); virtual;
     property IsActiveChannel: Boolean read GetIsActiveChannel;
+    function Play: Boolean; virtual;
   public
     //fx
     procedure SetFXBands(BandCount: integer);
     property FXValues[const Index: Integer]: Single read GetFXValue write SetFXValue;
     property EQFrequencies[const Index: Integer]: Single read GetEQFrequencies write SetEQFrequencies;
     procedure ResetFX;
+    function GetDuration: Int64; virtual;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     //Methods
-    function GetData(var FFTData: TFFTData): Boolean;
+    function GetWaveData(var FFTData: TFFTData): Boolean;
     function GetLibPath: string; virtual;
-    function GetSize: Int64; virtual;
     function GetTimeFromPercent(Value: Extended): string; virtual;
     function Init(Handle: Pointer = nil; HWND: NativeUInt = 0): Boolean; override;
-    function Play: Boolean; virtual;
     function Resume: Boolean; virtual;
     procedure Pause; virtual;
     procedure PlayAsync(ResultMethod: TPlayAsyncResult = nil); virtual;
@@ -117,30 +119,31 @@ type
     procedure QuickPlayResource(const ResourceName: string);
     procedure QuickPlayFile(const FileName: string);
     //Props
-    property Async: Boolean read FAsync write SetAsync;
-    property AutoPlay: Boolean read FAutoPlay write SetAutoPlay;
     property AutoFree: Boolean read FAutoFree write SetAutoFree;
+    property AutoFreeStream: Boolean read FAutoFreeStream write SetAutoFreeStream;
     property Bufferring: Int64 read GetBufferring;
     property BufferringPercent: Extended read GetBufferringPercent;
     property FileName: string read FFileName write SetFileName;
     property IsOpening: Boolean read GetIsOpening;
     property IsPause: Boolean read GetIsPause;
     property IsPlay: Boolean read GetIsPlay;
-    property KeepPlayChannel: Boolean read FKeepPlayChannel write SetKeepPlayChannel;
     property PauseOnIncomingCalls: Boolean read FPauseOnIncomingCalls write SetPauseOnIncomingCalls;
     property PlayKind: TPlayerPlayKind read FPlayKind;
-    property Position: Int64 read GetPosition write SetPosition;
+    property PositionSec: Int64 read GetPositionSec write SetPositionSec;
     property PositionByte: Int64 read GetPositionByte write SetPositionByte;
     property PositionPercent: Extended read GetPositionPercent write SetPositionPercent;
     property PositionTime: string read GetPositionTime;
     property PositionTimeLeft: string read GetPositionTimeLeft;
-    property Size: Int64 read GetSize;
+    property DurationTime: string read GetDurationTime;
+    property Duration: Int64 read GetDuration;
     property SizeAsBuffer: Int64 read GetSizeAsBuffer;
     property SizeByte: Int64 read GetSizeByte;
     property State: TPlayerState read FPlayerState write SetPlayerState;
     property StreamURL: string read FStreamURL write SetStreamURL;
+    property Stream: TStream read FStream write SetStream;
     property VolumeChannel: Single read FVolumeChannel write SetVolumeChannel;
-    property PositionInterval: Integer read FPositionInterval write SetPositionInterval;
+    property PositionUpdateInterval: Integer read GetPositionUpdateInterval write SetPositionUpdateInterval;
+    property Headers: string read FHeaders write SetHeaders;
     //Events
     property OnChangeState: TNotifyEvent read FOnChangeState write SetOnChangeState;
     property OnEnd: TNotifyEvent read FOnEnd write SetOnEnd;
@@ -191,19 +194,22 @@ begin
   UpdateFX;
 end;
 
+procedure TFMXCustomPlayer.SetHeaders(const Value: string);
+begin
+  FHeaders := Value;
+end;
+
 constructor TFMXCustomPlayer.Create(AOwner: TComponent);
 begin
   inherited;
   FBandWidth := 18;
-  FPositionInterval := 1000;
   FTimer := TTimer.Create(Self);
   FTimer.Enabled := False;
-  FTimer.Interval := FPositionInterval;
+  FTimer.Interval := 500;
   FTimer.OnTimer := FOnTimer;
   FStarting := False;
   FInQueue := False;
   FAutoFree := True;
-  FKeepPlayChannel := False;
   FActiveChannel := 0;
   FVolumeChannel := 100;
   FPlayerState := TPlayerState.psNone;
@@ -211,11 +217,11 @@ end;
 
 procedure TFMXCustomPlayer.DoOnEnd(handle: HSYNC; channel, data: Cardinal; user: Pointer);
 begin
+  DoPlayerState(TPlayerState.psEnd);
   if Assigned(FOnEnd) then
-    TThread.ForceQueue(nil,
+    TThread.Queue(nil,
       procedure
       begin
-        DoPlayerState(TPlayerState.psStop);
         FOnEnd(Self);
       end);
 end;
@@ -231,7 +237,7 @@ begin
   if IsPlay then
   begin
     if Assigned(FOnChangePosition) then
-      FOnChangePosition(Self, GetPosition);
+      FOnChangePosition(Self, GetPositionSec);
   end;
 end;
 
@@ -268,58 +274,122 @@ begin
   UpdateFX;
 end;
 
+function StreamReadCallback(buffer: Pointer; length: DWORD; user: Pointer): DWORD; stdcall;
+begin
+  var Player := TFMXCustomPlayer(user);
+  if Assigned(Player.FStream) then
+  begin
+    try
+      Result := Player.FStream.Read(buffer^, length)
+    except
+      Player.Stop;
+      Result := 0;
+    end;
+  end
+  else
+    Result := 0;
+end;
+
+function StreamSeekCallback(offset: QWORD; user: Pointer): BOOL; stdcall;
+begin
+  var Player := TFMXCustomPlayer(user);
+  if Assigned(Player.FStream) then
+  begin
+    try
+      Player.FStream.Seek(offset, soBeginning);
+      Result := True;
+    except
+      Player.Stop;
+      Result := False;
+    end;
+  end
+  else
+    Result := False;
+end;
+
+function StreamLengthCallback(user: Pointer): QWORD; stdcall;
+begin
+  var Player := TFMXCustomPlayer(user);
+  try
+    Result := Player.FStream.Size;
+  except
+    Player.Stop;
+    Result := 0;
+  end;
+end;
+
+procedure StreamCloseCallback(user: Pointer); stdcall;
+begin
+  var Player := TFMXCustomPlayer(user);
+  if Player.FAutoFreeStream then
+    Player.FStream.Free;
+  Player.FStream := nil;
+end;
+
+procedure StatusProc(buffer: Pointer; length: Cardinal; user: Pointer); stdcall;
+begin       {
+  var str: AnsiString;
+  SetString(str, PAnsiChar(buffer), length);}
+end;
+
 function TFMXCustomPlayer.Play: Boolean;
 begin
   Result := False;
   try
-    if not (BassLibrary.IsInit and (not IsOpening)) then
-      Exit;
-    DoPlayerState(TPlayerState.psOpening);
-    if not FKeepPlayChannel then
-      UnloadChannel;
+    UnloadChannel;
     case FPlayKind of
       pkFile:
         begin
           FActiveChannel := BASS_StreamCreateFile(False, PChar(FFileName), 0, 0, BASS_UNICODE);
         end;
+      pkStreamUrl:
+        begin
+          var Url: string := FStreamURL;
+          if not FHeaders.IsEmpty then
+            Url := Url + #13#10 + FHeaders;
+          FActiveChannel := BASS_StreamCreateURL(PChar(Url), 0,
+              BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_STREAM_PRESCAN, StatusProc, Self);
+        end;
       pkStream:
         begin
-          FActiveChannel := BASS_StreamCreateURL(PChar(FStreamURL), 0, BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or
-              BASS_UNICODE or BASS_MP3_SETPOS, nil, nil);
+          var FileProcs: BASS_FILEPROCS;
+          FileProcs.close := StreamCloseCallback;
+          FileProcs.read := StreamReadCallback;
+          FileProcs.seek := StreamSeekCallback;
+          FileProcs.length := StreamLengthCallback;
+          FActiveChannel := BASS_StreamCreateFileUser(STREAMFILE_NOBUFFER,
+              BASS_STREAM_STATUS or BASS_STREAM_AUTOFREE or BASS_UNICODE or BASS_STREAM_PRESCAN, FileProcs, Self);
         end;
     end;
 
-    if IsActiveChannel then
+    if not IsActiveChannel then
+      Exit;
+
+    CreateFX;
+    FUpdateChannelVolume;
+    if BASS_ChannelPlay(FActiveChannel, False) then
     begin
-      CreateFX;
-      FUpdateChannelVolume;
-      if BASS_ChannelPlay(FActiveChannel, False) then
-      begin
-        FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, Self);
-        DoPlayerState(TPlayerState.psPlay);
-        Result := True;
-      end;
-    end
-    else
-    begin
-      DoPlayerState(TPlayerState.psError);
-      BassLibrary.LastErrorCode := Bass_ErrorGetCode;
+      FPlaySyncEnd := BASS_ChannelSetSync(FActiveChannel, BASS_SYNC_END, 0, @FSyncEnd, Self);
+      Result := True;
     end;
   finally
-    if IsOpening or (not Result) then
-      DoPlayerState(TPlayerState.psError);
+    if not Result then
+      BassLibrary.LastErrorCode := Bass_ErrorGetCode;
   end;
 end;
 
 procedure TFMXCustomPlayer.PlayAsync(ResultMethod: TPlayAsyncResult);
 begin
-  TThread.CreateAnonymousThread(
-    procedure
-    var
-      Success: Boolean;
+  if not BassLibrary.IsInit then
+    Exit;
+  // State
+  DoPlayerState(TPlayerState.psOpening);
+  // Play
+  if FInQueue then
+    Exit;
+  TaskRun(Self,
+    procedure(Holder: IComponentHolder)
     begin
-      if FInQueue then
-        Exit;
       while FStarting do
       begin
         FInQueue := True;
@@ -327,29 +397,33 @@ begin
       end;
       FInQueue := False;
       FStarting := True;
+      var Success := False;
       try
-        try
-          Success := Play;
-        except
-          Success := False;
-        end;
+        Success := Play;
+        if FInQueue then
+          Exit;
+        if Success then
+          DoPlayerState(TPlayerState.psPlay)
+        else
+          DoPlayerState(TPlayerState.psError);
       finally
-        if Assigned(ResultMethod) then
-          TThread.Queue(nil,
+        FStarting := False;
+        if not FInQueue then
+          Queue(
             procedure
             begin
-              ResultMethod(Success);
+              if Assigned(ResultMethod) then
+                ResultMethod(Success);
             end);
-        FStarting := False;
       end;
-    end).Start;
+    end);
 end;
 
 procedure TFMXCustomPlayer.QuickPlayFile(const FileName: string);
 begin
   if not BassLibrary.IsInit then
     Exit;
-  var Ch := BASS_StreamCreateFile(False, PChar(FileName), 0, 0, BASS_UNICODE);
+  var Ch := BASS_StreamCreateFile(False, PChar(FileName), 0, 0, BASS_UNICODE or BASS_STREAM_AUTOFREE);
   BASS_ChannelPlay(Ch, False);
 end;
 
@@ -395,7 +469,7 @@ begin
   FPlayerState := Value;
 end;
 
-procedure TFMXCustomPlayer.SetPosition(const Value: Int64);
+procedure TFMXCustomPlayer.SetPositionSec(const Value: Int64);
 begin
   if not IsActiveChannel then
     Exit;
@@ -409,67 +483,26 @@ begin
   BASS_ChannelSetPosition(FActiveChannel, Value, BASS_POS_BYTE);
 end;
 
-procedure TFMXCustomPlayer.SetPositionInterval(const Value: Integer);
+procedure TFMXCustomPlayer.SetPositionUpdateInterval(const Value: Integer);
 begin
-  FPositionInterval := Value;
-  FTimer.Interval := FPositionInterval;
+  FTimer.Interval := Value;
 end;
 
 procedure TFMXCustomPlayer.SetPositionPercent(const Value: Extended);
 begin
-  SetPosition(Round((GetSize / 100) * Value));
+  SetPositionSec(Round((GetDuration / 100) * Value));
 end;
 
-procedure TFMXCustomPlayer.SetStreamURL(AUrl: string);
+procedure TFMXCustomPlayer.SetStream(const Value: TStream);
 begin
-  if csDesigning in ComponentState then
-  begin
-    FPlayKind := TPlayerPlayKind.pkStream;
-    FStreamURL := AUrl;
-    Exit;
-  end;
-
-  if IsOpening then
-    Exit;
-
-  if AUrl.IsEmpty then
-  begin
-    FStreamURL := AUrl;
-    Stop;
-    Exit;
-  end;
-
-  if FStreamURL = AUrl then
-  begin
-    if (FAutoPlay and (not IsPlay)) then
-      Play;
-    Exit;
-  end;
-
   FPlayKind := TPlayerPlayKind.pkStream;
-  FStreamURL := AUrl;
-
-  if FAutoPlay then
-    if FAsync then
-      PlayAsync(
-        procedure(const Success: Boolean)
-        begin
-          if not Success then
-          begin
-            Sleep(100);
-            PlayAsync;
-          end;
-        end)
-    else if not Play then
-    begin
-      Sleep(100);
-      Play;
-    end;
+  FStream := Value;
 end;
 
-procedure TFMXCustomPlayer.SetAsync(const Value: Boolean);
+procedure TFMXCustomPlayer.SetStreamURL(const Value: string);
 begin
-  FAsync := Value;
+  FPlayKind := TPlayerPlayKind.pkStreamUrl;
+  FStreamURL := Value;
 end;
 
 procedure TFMXCustomPlayer.SetAutoFree(const Value: Boolean);
@@ -477,9 +510,9 @@ begin
   FAutoFree := Value;
 end;
 
-procedure TFMXCustomPlayer.SetAutoPlay(const Value: Boolean);
+procedure TFMXCustomPlayer.SetAutoFreeStream(const Value: Boolean);
 begin
-  FAutoPlay := Value;
+  FAutoFreeStream := Value;
 end;
 
 procedure TFMXCustomPlayer.SetEQFrequencies(const Index: Integer; const Value: Single);
@@ -489,20 +522,8 @@ end;
 
 procedure TFMXCustomPlayer.SetFileName(const Value: string);
 begin
-  FFileName := Value;
   FPlayKind := TPlayerPlayKind.pkFile;
-
-  if not (csDesigning in ComponentState) then
-    if FAutoPlay then
-      if FAsync then
-        PlayAsync
-      else
-        Play;
-end;
-
-procedure TFMXCustomPlayer.SetKeepPlayChannel(const Value: Boolean);
-begin
-  FKeepPlayChannel := Value;
+  FFileName := Value;
 end;
 
 procedure TFMXCustomPlayer.SetVolumeChannel(const Value: Single);
@@ -532,7 +553,7 @@ function TFMXCustomPlayer.GetBufferring: Int64;
 begin
   if not BassLibrary.IsInit then
     Exit(0);
-  Result := BASS_StreamGetFilePosition(FActiveChannel, BASS_FILEPOS_BUFFER);
+  Result := BASS_StreamGetFilePosition(FActiveChannel, BASS_FILEPOS_DOWNLOAD);
 end;
 
 function TFMXCustomPlayer.GetBufferringPercent: Extended;
@@ -549,7 +570,7 @@ begin
   Result := BASS_FOLDER + bassdll;
 end;
 
-function TFMXCustomPlayer.GetPosition: Int64;
+function TFMXCustomPlayer.GetPositionSec: Int64;
 begin
   if IsActiveChannel then
     Result := Trunc(BASS_ChannelBytes2Seconds(FActiveChannel, BASS_ChannelGetPosition(FActiveChannel, BASS_POS_BYTE)))
@@ -557,7 +578,7 @@ begin
     Result := 0;
 end;
 
-function TFMXCustomPlayer.GetData(var FFTData: TFFTData): Boolean;
+function TFMXCustomPlayer.GetWaveData(var FFTData: TFFTData): Boolean;
 begin
   Result := False;
   if not BassLibrary.IsInit then
@@ -615,7 +636,7 @@ function TFMXCustomPlayer.GetPositionTime: string;
 var
   M, S: Integer;
 begin
-  S := Position;
+  S := GetPositionSec;
   M := S div 60;
   S := S mod 60;
   Result := Format('%d:%.2d', [M, S]);
@@ -625,17 +646,22 @@ function TFMXCustomPlayer.GetPositionTimeLeft: string;
 var
   M, S: Integer;
 begin
-  S := Position - Size;
+  S := GetPositionSec - GetDuration;
   M := S div 60;
   S := S mod 60;
   Result := Format('-%d:%.2d', [Abs(M), Abs(S)]);
+end;
+
+function TFMXCustomPlayer.GetPositionUpdateInterval: Integer;
+begin
+  Result := FTimer.Interval;
 end;
 
 function TFMXCustomPlayer.GetTimeFromPercent(Value: Extended): string;
 var
   M, S: Integer;
 begin
-  S := Round(Size * (Value / 100));
+  S := Round(GetDuration * (Value / 100));
   M := S div 60;
   S := S mod 60;
   Result := Format('%d:%.2d', [M, S]);
@@ -658,26 +684,37 @@ begin
   {$ENDIF}
 end;
 
-function TFMXCustomPlayer.GetSize: Int64;
+function TFMXCustomPlayer.GetDurationTime: string;
+var
+  M, S: Integer;
+begin
+  S := GetDuration;
+  M := S div 60;
+  S := S mod 60;
+  Result := Format('%d:%.2d', [M, S]);
+end;
+
+function TFMXCustomPlayer.GetDuration: Int64;
 begin
   if IsActiveChannel then
     Result := Trunc(BASS_ChannelBytes2Seconds(FActiveChannel, BASS_ChannelGetLength(FActiveChannel, BASS_POS_BYTE)))
   else
-    Result := -1;
+    Result := 0;
 end;
 
 destructor TFMXCustomPlayer.Destroy;
 begin
   if not (csDesigning in ComponentState) then
-  begin
     UnloadChannel;
-  end;
   inherited;
 end;
 
 function TFMXCustomPlayer.GetSizeAsBuffer: Int64;
 begin
-  Result := BASS_StreamGetFilePosition(FActiveChannel, BASS_FILEPOS_END);
+  if IsActiveChannel then
+    Result := BASS_StreamGetFilePosition(FActiveChannel, BASS_FILEPOS_END)
+  else
+    Result := 0;
 end;
 
 function TFMXCustomPlayer.GetSizeByte: Int64;
@@ -690,20 +727,21 @@ end;
 
 procedure TFMXCustomPlayer.DoChangeState;
 begin
-  FTimer.Enabled := FPlayerState in [TPlayerState.psPlay, TPlayerState.psOpening];
-  if IsActiveChannel and (FPlayerState in [psStop, psError]) and FAutoFree then
+  if IsActiveChannel and (FPlayerState in [psStop, psError, psEnd]) and FAutoFree then
     UnloadChannel;
-  if Assigned(FOnChangeState) then
-    TThread.ForceQueue(nil,
-      procedure
-      begin
+  TThread.Queue(nil,
+    procedure
+    begin
+      FTimer.Enabled := FPlayerState in [TPlayerState.psPlay, TPlayerState.psOpening];
+      FOnTimer(FTimer);
+      if Assigned(FOnChangeState) then
         FOnChangeState(Self);
-      end);
+    end);
 end;
 
 procedure TFMXCustomPlayer.ResetFX;
 begin
-  if (not IsActiveChannel) or (Length(FFXHandles) <= 0) then
+  if (not IsActiveChannel) or (length(FFXHandles) <= 0) then
     Exit;
   for var i := 0 to High(FFXHandles) do
   begin
@@ -725,6 +763,7 @@ begin
   else
   begin
     DoPlayerState(TPlayerState.psError);
+    BassLibrary.LastErrorCode := Bass_ErrorGetCode;
     Result := False;
   end;
 end;
