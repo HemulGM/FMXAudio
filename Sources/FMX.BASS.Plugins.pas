@@ -32,7 +32,7 @@ end;
 
 destructor TFMXPlayerPlugins.Destroy;
 begin
-  FHPlugins.DisposeOf;
+  FHPlugins.Free;
   inherited;
 end;
 

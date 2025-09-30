@@ -6,7 +6,7 @@ uses
   FMX.Player, FMX.Recorder, System.Classes;
 
 type
-  [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
+  [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroidArm32 or pidAndroidArm64)]
   TFMXPlayer = class(TFMXCustomPlayer)
   public
     property Bufferring;
@@ -42,7 +42,7 @@ type
     property OnEnd;
   end;
 
-  [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroid32Arm or pidAndroid64Arm)]
+  [ComponentPlatformsAttribute(pidWin32 or pidWin64 or pidAndroidArm32 or pidAndroidArm64)]
   TBassRecorder = class(TCustomBassRecorder)
   published
     property AutoInit default False;
