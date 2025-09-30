@@ -3,13 +3,35 @@ unit FMX.BASS.Classes;
 interface
 
 uses
-  FMX.Types, FMX.BASS, FMX.BASS.Plugins, System.Classes;
+  System.SysUtils, FMX.Types, FMX.BASS, System.Classes;
 
 type
-  TBassLibrary = class(TPersistent)
+  THolder = class(TComponent)
   private
-    FPlugins: TFMXPlayerPlugins;
-    procedure SetPlugins(const Value: TFMXPlayerPlugins);
+    FHold: TComponent;
+  protected
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+  public
+    procedure HoldComponent(AComponent: TComponent);
+    function IsLive: Boolean;
+  end;
+
+  IComponentHolder = interface
+    procedure HoldComponent(AComponent: TComponent);
+    function IsLive: Boolean;
+  end;
+
+  TComponentHolder = class(TInterfacedObject, IComponentHolder)
+  private
+    FHolder: THolder;
+  public
+    procedure HoldComponent(AComponent: TComponent);
+    function IsLive: Boolean;
+    constructor Create(AComponent: TComponent = nil);
+    destructor Destroy; override;
+  end;
+
+  TBassLibrary = class(TPersistent)
   protected
     FIsInit: Boolean;
     FFlags: Cardinal;
@@ -26,7 +48,7 @@ type
     procedure SetSystemVolume(const AValue: Single); virtual;
   public
     procedure Uninit; virtual;
-    constructor Create(AOwner: TComponent);
+    constructor Create(AOwner: TComponent); virtual;
     destructor Destroy; override;
     /// <summary>
     /// Use Handle (for android, fmx) or WindowHandle (windows, fmx/vcl) or nothing
@@ -40,7 +62,6 @@ type
     property Flags: Cardinal read FFlags write SetFlags default 0;
     property Freq: Cardinal read FFreq write SetFreq default 44100;
     property UseDefaultDevice: Boolean read FUseDefaultDevice write SetUseDefaultDevice default True;
-    property Plugins: TFMXPlayerPlugins read FPlugins write SetPlugins;
     property Version: string read GetVersion;
   end;
 
@@ -53,11 +74,19 @@ type
     procedure SetAutoInit(const Value: Boolean);
     procedure SetBassLibraryInst(const Value: TBassLibrary);
   public
-    function Init(Handle: Pointer = nil; HWND: NativeUInt = 0): Boolean; virtual;
     constructor Create(AOwner: TComponent); override;
+    function Init(Handle: Pointer = nil; HWND: NativeUInt = 0): Boolean; virtual;
     property BassLibrary: TBassLibrary read FBassLibraryInst write SetBassLibraryInst;
     property AutoInit: Boolean read FAutoInit write SetAutoInit;
   end;
+
+procedure TaskRun(const Owner: TComponent; Proc: TProc<IComponentHolder>);
+
+procedure Queue(Proc: TThreadProcedure);
+
+procedure Sync(Proc: TThreadProcedure);
+
+procedure ForceQueue(Proc: TThreadProcedure);
 
 implementation
 
@@ -66,39 +95,30 @@ uses
   Winapi.Windows,
   {$ENDIF}
   {$IFDEF ANDROID}
-  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
-  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media, Androidapi.JNI.Provider, Androidapi.Helpers,
-  Androidapi.JNI.App,
+  FMX.Platform.Android, Androidapi.JNI.Os, Androidapi.JNI.Net,
+  Androidapi.JNIBridge, Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Media,
+  Androidapi.JNI.Provider, Androidapi.Helpers, Androidapi.JNI.App,
   {$ENDIF}
-  System.SysUtils;
+   System.Threading;
 
 { TBassLibrary }
 
 destructor TBassLibrary.Destroy;
 begin
-  //if not (csDesigning in ComponentState) then
-  begin
-    FPlugins.Unload;
-    Uninit;
-  end;
-  FPlugins.Free;
+  Uninit;
   inherited;
 end;
 
 function TBassLibrary.GetSystemVolume: Single;
-{$IFDEF ANDROID}
-var
-  AudioManager: JAudioManager;
-{$ENDIF}
 begin
-{$IFDEF ANDROID}
-  AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
+  {$IFDEF ANDROID}
+  var AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
   Result := AudioManager.getStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
   Result := Result / AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC);
-{$ENDIF}
-{$IFDEF MSWINDOWS}
+  {$ELSE}
   Result := BASS_GetVolume;
-{$ENDIF}
+  {$ENDIF}
 end;
 
 function TBassLibrary.Init(Handle: Pointer; HWND: NativeUInt): Boolean;
@@ -106,29 +126,29 @@ begin
   Result := False;
   if BASS_Available then
   begin
-    if FUseDefaultDevice then
-      BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, 1);
     {$IFDEF MSWINDOWS}
     if BASS_Init(Device, Freq, Flags, HWND, nil) then
     {$ENDIF}
-    {$IFDEF ANDROID}
+    {$IFDEF POSIX}
       if BASS_Init(Device, Freq, Flags, Handle, nil) then
     {$ENDIF}
       begin
-        FPlugins.Load;
         BASS_SetConfig(BASS_CONFIG_NET_PLAYLIST, 1);
         BASS_SetConfig(BASS_CONFIG_NET_PREBUF, 0);
         Result := True;
       end;
+    BASS_PluginLoad('bass_ssl.dll', 0);
+    if FUseDefaultDevice then
+      BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, 1);
+    //BASS_SetConfig(BASS_CONFIG_NET_PREBUF, 1);
   end;
   FIsInit := Result;
 end;
 
 constructor TBassLibrary.Create(AOwner: TComponent);
 begin
-  //inherited C;
+  inherited Create;
   FUseDefaultDevice := True;
-  FPlugins := TFMXPlayerPlugins.Create;
   FDevice := -1;
   FFreq := 44100;
   FFlags := 0;
@@ -149,11 +169,6 @@ begin
   FFreq := Value;
 end;
 
-procedure TBassLibrary.SetPlugins(const Value: TFMXPlayerPlugins);
-begin
-  FPlugins := Value;
-end;
-
 procedure TBassLibrary.Uninit;
 begin
   if BASS_Available and FIsInit then
@@ -166,21 +181,13 @@ begin
 end;
 
 procedure TBassLibrary.SetSystemVolume(const AValue: Single);
-{$IFDEF ANDROID}
-var
-  AudioManager: JAudioManager;
-{$ENDIF}
-begin       {
-  if csDesigning in ComponentState then
-    Exit;   }
-{$IFDEF ANDROID}
-  AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
-  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC)
-    * AValue), 0);
-{$ENDIF}
-{$IFDEF MSWINDOWS}
+begin
+  {$IFDEF ANDROID}
+  var AudioManager := TJAudioManager.Wrap(MainActivity.getSystemService(TJContext.JavaClass.AUDIO_SERVICE));
+  AudioManager.SetStreamVolume(TJAudioManager.JavaClass.STREAM_MUSIC, Round(AudioManager.getStreamMaxVolume(TJAudioManager.JavaClass.STREAM_MUSIC) * AValue), 0);
+  {$ELSE}
   BASS_SetVolume(AValue);
-{$ENDIF}
+  {$ENDIF}
 end;
 
 procedure TBassLibrary.SetUseDefaultDevice(const Value: Boolean);
@@ -214,6 +221,87 @@ end;
 procedure TCustomBassComponent.SetBassLibraryInst(const Value: TBassLibrary);
 begin
   FBassLibraryInst := Value;
+end;
+
+procedure TaskRun(const Owner: TComponent; Proc: TProc<IComponentHolder>);
+var
+  ObjectHold: IComponentHolder;
+begin
+  ObjectHold := TComponentHolder.Create(Owner);
+  TTask.Run(
+    procedure
+    begin
+      try
+        Proc(ObjectHold);
+      finally
+        TThread.ForceQueue(nil,
+          procedure
+          begin
+            ObjectHold := nil;
+          end);
+      end;
+    end);
+end;
+
+procedure Queue(Proc: TThreadProcedure);
+begin
+  TThread.Queue(nil, Proc);
+end;
+
+procedure ForceQueue(Proc: TThreadProcedure);
+begin
+  TThread.ForceQueue(nil, Proc);
+end;
+
+procedure Sync(Proc: TThreadProcedure);
+begin
+  TThread.Synchronize(nil, Proc);
+end;
+
+{ THolder }
+
+procedure THolder.HoldComponent(AComponent: TComponent);
+begin
+  FHold := AComponent;
+  AComponent.FreeNotification(Self);
+end;
+
+function THolder.IsLive: Boolean;
+begin
+  Result := Assigned(FHold);
+end;
+
+procedure THolder.Notification(AComponent: TComponent; Operation: TOperation);
+begin
+  inherited;
+  if Operation = opRemove then
+    if AComponent = FHold then
+      FHold := nil;
+end;
+
+{ TComponentHolder }
+
+constructor TComponentHolder.Create(AComponent: TComponent);
+begin
+  inherited Create;
+  FHolder := THolder.Create(nil);
+  FHolder.HoldComponent(AComponent);
+end;
+
+destructor TComponentHolder.Destroy;
+begin
+  FHolder.Free;
+  inherited;
+end;
+
+procedure TComponentHolder.HoldComponent(AComponent: TComponent);
+begin
+  FHolder.HoldComponent(AComponent);
+end;
+
+function TComponentHolder.IsLive: Boolean;
+begin
+  Result := FHolder.IsLive;
 end;
 
 initialization

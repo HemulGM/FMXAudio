@@ -1,0 +1,1046 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'ID3v2 Library Tutorial FireMonkey'
+  ClientHeight = 728
+  ClientWidth = 820
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop, iPhone, iPad]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object Layer3D1: TLayer3D
+    Align = Client
+    Height = 728.000000000000000000
+    Position.X = 410.000000000000000000
+    Position.Y = 364.000000000000000000
+    Projection = Screen
+    Resolution = 50
+    StyleLookup = 'backgroundstyle'
+    Width = 820.000000000000000000
+    object Button1: TButton
+      Position.X = 712.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 81.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'Select...'
+      TextSettings.Trimming = None
+      OnClick = Button1Click
+    end
+    object Edit1: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      TabOrder = 1
+      Position.X = 79.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 625.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object Label1: TLabel
+      Position.X = 16.000000000000000000
+      Position.Y = 11.000000000000000000
+      Size.Width = 65.000000000000000000
+      Size.Height = 15.000000000000000000
+      Size.PlatformDefault = False
+      Text = 'File name:'
+      TabOrder = 2
+    end
+    object TabControl1: TTabControl
+      Position.Y = 40.000000000000000000
+      Size.Width = 819.000000000000000000
+      Size.Height = 689.000000000000000000
+      Size.PlatformDefault = False
+      TabHeight = 20.000000000000000000
+      TabIndex = 1
+      TabOrder = 3
+      TabPosition = Top
+      Sizes = (
+        819s
+        669s
+        819s
+        669s)
+      object TabItem1: TTabItem
+        CustomIcon = <
+          item
+          end>
+        TextSettings.Trimming = None
+        IsSelected = False
+        Size.Width = 51.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+        StyleLookup = ''
+        TabOrder = 0
+        Text = 'ID3v1'
+        ExplicitSize.cx = 50.000000000000000000
+        ExplicitSize.cy = 50.000000000000000000
+        object GroupBox1: TGroupBox
+          Position.X = 16.000000000000000000
+          Position.Y = 8.000000000000000000
+          Size.Width = 793.000000000000000000
+          Size.Height = 201.000000000000000000
+          Size.PlatformDefault = False
+          Text = 'ID3v1:'
+          TabOrder = 0
+          object Label2: TLabel
+            Position.X = 16.000000000000000000
+            Position.Y = 27.000000000000000000
+            Size.Width = 57.000000000000000000
+            Size.Height = 15.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Title:'
+            TabOrder = 0
+          end
+          object Label3: TLabel
+            Position.X = 16.000000000000000000
+            Position.Y = 51.000000000000000000
+            Size.Width = 57.000000000000000000
+            Size.Height = 15.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Artist:'
+            TabOrder = 1
+          end
+          object Label4: TLabel
+            Position.X = 16.000000000000000000
+            Position.Y = 75.000000000000000000
+            Size.Width = 57.000000000000000000
+            Size.Height = 15.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Album:'
+            TabOrder = 2
+          end
+          object Label5: TLabel
+            Position.X = 16.000000000000000000
+            Position.Y = 99.000000000000000000
+            Size.Width = 57.000000000000000000
+            Size.Height = 15.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Year:'
+            TabOrder = 3
+          end
+          object Label6: TLabel
+            Position.X = 16.000000000000000000
+            Position.Y = 123.000000000000000000
+            Size.Width = 57.000000000000000000
+            Size.Height = 15.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Comment:'
+            TabOrder = 4
+          end
+          object Label7: TLabel
+            Position.X = 16.000000000000000000
+            Position.Y = 147.000000000000000000
+            Size.Width = 57.000000000000000000
+            Size.Height = 15.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Genre:'
+            TabOrder = 5
+          end
+          object Label8: TLabel
+            Position.X = 16.000000000000000000
+            Position.Y = 171.000000000000000000
+            Size.Width = 57.000000000000000000
+            Size.Height = 15.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Track:'
+            TabOrder = 6
+          end
+          object Button2: TButton
+            Position.X = 704.000000000000000000
+            Position.Y = 16.000000000000000000
+            Size.Width = 80.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 7
+            Text = 'Load'
+            TextSettings.Trimming = None
+            OnClick = Button2Click
+          end
+          object Button3: TButton
+            Position.X = 704.000000000000000000
+            Position.Y = 40.000000000000000000
+            Size.Width = 80.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 8
+            Text = 'Save'
+            TextSettings.Trimming = None
+            OnClick = Button3Click
+          end
+          object Button4: TButton
+            Position.X = 704.000000000000000000
+            Position.Y = 64.000000000000000000
+            Size.Width = 80.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 9
+            Text = 'Remove'
+            TextSettings.Trimming = None
+            OnClick = Button4Click
+          end
+          object Edit2: TEdit
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 10
+            Position.X = 80.000000000000000000
+            Position.Y = 24.000000000000000000
+            Size.Width = 609.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object Edit3: TEdit
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 11
+            Position.X = 80.000000000000000000
+            Position.Y = 48.000000000000000000
+            Size.Width = 609.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object Edit4: TEdit
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 12
+            Position.X = 80.000000000000000000
+            Position.Y = 72.000000000000000000
+            Size.Width = 609.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object Edit5: TEdit
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 13
+            Position.X = 80.000000000000000000
+            Position.Y = 96.000000000000000000
+            Size.Width = 609.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object Edit6: TEdit
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 14
+            Position.X = 80.000000000000000000
+            Position.Y = 120.000000000000000000
+            Size.Width = 609.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object Edit7: TEdit
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 15
+            Position.X = 80.000000000000000000
+            Position.Y = 168.000000000000000000
+            Size.Width = 609.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object ComboBox2: TComboBox
+            DropDownCount = 32
+            Position.X = 80.000000000000000000
+            Position.Y = 144.000000000000000000
+            Size.Width = 609.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 16
+          end
+        end
+      end
+      object TabItem2: TTabItem
+        CustomIcon = <
+          item
+          end>
+        TextSettings.Trimming = None
+        IsSelected = True
+        Size.Width = 51.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+        StyleLookup = ''
+        TabOrder = 0
+        Text = 'ID3v2'
+        ExplicitSize.cx = 50.000000000000000000
+        ExplicitSize.cy = 50.000000000000000000
+        object GroupBox2: TGroupBox
+          Position.X = 16.000000000000000000
+          Position.Y = 8.000000000000000000
+          Size.Width = 793.000000000000000000
+          Size.Height = 657.000000000000000000
+          Size.PlatformDefault = False
+          Text = 'ID3v2:'
+          TabOrder = 0
+          object GroupBox3: TGroupBox
+            Position.X = 8.000000000000000000
+            Position.Y = 16.000000000000000000
+            Size.Width = 681.000000000000000000
+            Size.Height = 81.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Tag Attributes:'
+            TabOrder = 0
+            object Label9: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 73.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Tag version:'
+              TabOrder = 0
+            end
+            object Label10: TLabel
+              Position.X = 88.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 57.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 1
+            end
+            object CheckBox1: TCheckBox
+              Position.X = 152.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 19.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 2
+              Text = 'Unsynchronised'
+            end
+            object CheckBox2: TCheckBox
+              Position.X = 152.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 19.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 3
+              Text = 'Extended header'
+            end
+            object CheckBox3: TCheckBox
+              Position.X = 272.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 19.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 4
+              Text = 'Experimental'
+            end
+            object CheckBox4: TCheckBox
+              Position.X = 272.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 19.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 5
+              Text = 'CRC present'
+            end
+            object Label45: TLabel
+              Position.X = 400.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 57.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Playtime:'
+              TabOrder = 7
+            end
+            object LabelPlaytime: TLabel
+              Position.X = 456.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Unknown'
+              TabOrder = 8
+            end
+            object Label47: TLabel
+              Position.X = 400.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 57.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Bit rate:'
+              TabOrder = 9
+            end
+            object LabelBitRate: TLabel
+              Position.X = 456.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Unknown'
+              TabOrder = 10
+            end
+          end
+          object Button5: TButton
+            Position.X = 696.000000000000000000
+            Position.Y = 24.000000000000000000
+            Size.Width = 80.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            Text = 'Load'
+            TextSettings.Trimming = None
+            OnClick = Button5Click
+          end
+          object Button6: TButton
+            Position.X = 696.000000000000000000
+            Position.Y = 48.000000000000000000
+            Size.Width = 80.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 2
+            Text = 'Save'
+            TextSettings.Trimming = None
+            OnClick = Button6Click
+          end
+          object Button7: TButton
+            Position.X = 696.000000000000000000
+            Position.Y = 72.000000000000000000
+            Size.Width = 80.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 3
+            Text = 'Remove'
+            TextSettings.Trimming = None
+            OnClick = Button7Click
+          end
+          object GroupBox4: TGroupBox
+            Position.X = 8.000000000000000000
+            Position.Y = 96.000000000000000000
+            Size.Width = 505.000000000000000000
+            Size.Height = 177.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Information:'
+            TabOrder = 4
+            object Edit9: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 0
+              Position.X = 72.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 417.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit10: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 1
+              Position.X = 72.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 417.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit11: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 2
+              Position.X = 72.000000000000000000
+              Position.Y = 72.000000000000000000
+              Size.Width = 417.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit12: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 3
+              Position.X = 72.000000000000000000
+              Position.Y = 96.000000000000000000
+              Size.Width = 100.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit13: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 4
+              Position.X = 72.000000000000000000
+              Position.Y = 120.000000000000000000
+              Size.Width = 417.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit14: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 5
+              Position.X = 72.000000000000000000
+              Position.Y = 144.000000000000000000
+              Size.Width = 417.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Label11: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 27.000000000000000000
+              Size.Width = 49.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Title:'
+              TabOrder = 6
+            end
+            object Label12: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 51.000000000000000000
+              Size.Width = 49.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Artist:'
+              TabOrder = 7
+            end
+            object Label13: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 75.000000000000000000
+              Size.Width = 49.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Album:'
+              TabOrder = 8
+            end
+            object Label14: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 99.000000000000000000
+              Size.Width = 49.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Year:'
+              TabOrder = 9
+            end
+            object Label15: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 123.000000000000000000
+              Size.Width = 49.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Genre:'
+              TabOrder = 10
+            end
+            object Label16: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 147.000000000000000000
+              Size.Width = 49.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'URL:'
+              TabOrder = 11
+            end
+            object Label17: TLabel
+              Position.X = 184.000000000000000000
+              Position.Y = 99.000000000000000000
+              Size.Width = 41.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'TDRC:'
+              TabOrder = 12
+            end
+            object Label18: TLabel
+              Position.X = 376.000000000000000000
+              Position.Y = 99.000000000000000000
+              Size.Width = 41.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Track:'
+              TabOrder = 13
+            end
+            object Edit15: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 14
+              Position.X = 224.000000000000000000
+              Position.Y = 96.000000000000000000
+              Size.Width = 137.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit16: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 15
+              Position.X = 416.000000000000000000
+              Position.Y = 96.000000000000000000
+              Size.Width = 73.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+          end
+          object GroupBox5: TGroupBox
+            Position.X = 520.000000000000000000
+            Position.Y = 96.000000000000000000
+            Size.Width = 256.000000000000000000
+            Size.Height = 177.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Lyrics:'
+            TabOrder = 5
+            object Edit17: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 0
+              Position.X = 96.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 145.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit18: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 1
+              Position.X = 96.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 145.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Label19: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 27.000000000000000000
+              Size.Width = 73.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Language ID:'
+              TabOrder = 2
+            end
+            object Label20: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 51.000000000000000000
+              Size.Width = 73.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Description:'
+              TabOrder = 3
+            end
+            object Memo1: TMemo
+              Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+              DataDetectorTypes = []
+              Position.X = 16.000000000000000000
+              Position.Y = 72.000000000000000000
+              Size.Width = 225.000000000000000000
+              Size.Height = 97.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 4
+              Viewport.Width = 225.000000000000000000
+              Viewport.Height = 97.000000000000000000
+            end
+          end
+          object GroupBox6: TGroupBox
+            Position.X = 8.000000000000000000
+            Position.Y = 272.000000000000000000
+            Size.Width = 769.000000000000000000
+            Size.Height = 73.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Comment:'
+            TabOrder = 6
+            object Label21: TLabel
+              Position.X = 480.000000000000000000
+              Position.Y = 19.000000000000000000
+              Size.Width = 73.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Language ID:'
+              TabOrder = 0
+            end
+            object Label22: TLabel
+              Position.X = 480.000000000000000000
+              Position.Y = 43.000000000000000000
+              Size.Width = 73.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Description:'
+              TabOrder = 1
+            end
+            object Edit19: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 2
+              Position.X = 560.000000000000000000
+              Position.Y = 16.000000000000000000
+              Size.Width = 196.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Edit20: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 3
+              Position.X = 560.000000000000000000
+              Position.Y = 40.000000000000000000
+              Size.Width = 196.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Memo2: TMemo
+              Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+              DataDetectorTypes = []
+              Position.X = 8.000000000000000000
+              Position.Y = 16.000000000000000000
+              Size.Width = 465.000000000000000000
+              Size.Height = 50.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 4
+              Viewport.Width = 465.000000000000000000
+              Viewport.Height = 50.000000000000000000
+            end
+          end
+          object GroupBox7: TGroupBox
+            Position.X = 8.000000000000000000
+            Position.Y = 344.000000000000000000
+            Size.Width = 769.000000000000000000
+            Size.Height = 129.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'Album Cover Picture:'
+            TabOrder = 7
+            object Button8: TButton
+              Position.X = 16.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 145.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 0
+              Text = 'Get first APIC into TPicture'
+              TextSettings.Trimming = None
+              OnClick = Button8Click
+            end
+            object Button9: TButton
+              Position.X = 16.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 145.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 1
+              Text = 'Delete this APIC'
+              TextSettings.Trimming = None
+              OnClick = Button9Click
+            end
+            object Button10: TButton
+              Position.X = 16.000000000000000000
+              Position.Y = 72.000000000000000000
+              Size.Width = 145.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 2
+              Text = 'Save APIC to file...'
+              TextSettings.Trimming = None
+              OnClick = Button10Click
+            end
+            object Button11: TButton
+              Position.X = 16.000000000000000000
+              Position.Y = 96.000000000000000000
+              Size.Width = 145.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 3
+              Text = 'Add APIC from file...'
+              TextSettings.Trimming = None
+              OnClick = Button11Click
+            end
+            object ImageControl1: TImageControl
+              CanFocus = False
+              Position.X = 648.000000000000000000
+              Position.Y = 16.000000000000000000
+              Size.Width = 106.000000000000000000
+              Size.Height = 105.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 4
+            end
+            object Label23: TLabel
+              Position.X = 176.000000000000000000
+              Position.Y = 72.000000000000000000
+              Size.Width = 41.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Type:'
+              TabOrder = 5
+            end
+            object Label24: TLabel
+              Position.X = 272.000000000000000000
+              Position.Y = 72.000000000000000000
+              Size.Width = 305.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 6
+            end
+            object Label25: TLabel
+              Position.X = 176.000000000000000000
+              Position.Y = 99.000000000000000000
+              Size.Width = 97.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'APIC Description:'
+              TabOrder = 7
+            end
+            object Edit21: TEdit
+              Touch.InteractiveGestures = [LongTap, DoubleTap]
+              TabOrder = 8
+              Position.X = 272.000000000000000000
+              Position.Y = 96.000000000000000000
+              Size.Width = 369.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+            end
+            object Button16: TButton
+              Position.X = 584.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 25.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 9
+              Text = '<'
+              TextSettings.Trimming = None
+              OnClick = Button16Click
+            end
+            object Button17: TButton
+              Position.X = 616.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 24.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 10
+              Text = '>'
+              TextSettings.Trimming = None
+              OnClick = Button17Click
+            end
+          end
+          object GroupBox8: TGroupBox
+            Position.X = 8.000000000000000000
+            Position.Y = 472.000000000000000000
+            Size.Width = 769.000000000000000000
+            Size.Height = 177.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'All Frames:'
+            TabOrder = 8
+            object Label26: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Size:'
+              TabOrder = 0
+            end
+            object Label27: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 40.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Tag alter preservation:'
+              TabOrder = 1
+            end
+            object Label28: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 56.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'File alter preservation:'
+              TabOrder = 2
+            end
+            object Label29: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 72.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Read only:'
+              TabOrder = 3
+            end
+            object Label30: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 88.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Grouping identity:'
+              TabOrder = 4
+            end
+            object Label31: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 104.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Compressed:'
+              TabOrder = 5
+            end
+            object Label32: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 120.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Encrypted:'
+              TabOrder = 6
+            end
+            object Label33: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 136.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Unsynchronised:'
+              TabOrder = 7
+            end
+            object Label34: TLabel
+              Position.X = 16.000000000000000000
+              Position.Y = 152.000000000000000000
+              Size.Width = 120.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Data length indicator:'
+              TabOrder = 8
+            end
+            object Label35: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 9
+            end
+            object Label36: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 40.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 10
+            end
+            object Label37: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 56.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 11
+            end
+            object Label38: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 72.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 12
+            end
+            object Label39: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 88.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 13
+            end
+            object Label40: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 104.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 14
+            end
+            object Label41: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 120.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 15
+            end
+            object Label42: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 136.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 16
+            end
+            object Label43: TLabel
+              Position.X = 144.000000000000000000
+              Position.Y = 152.000000000000000000
+              Size.Width = 105.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'unknown'
+              TabOrder = 17
+            end
+            object Label44: TLabel
+              Position.X = 256.000000000000000000
+              Position.Y = 27.000000000000000000
+              Size.Width = 41.000000000000000000
+              Size.Height = 15.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Frame:'
+              TabOrder = 18
+            end
+            object ComboBox1: TComboBox
+              Position.X = 304.000000000000000000
+              Position.Y = 24.000000000000000000
+              Size.Width = 113.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 19
+              OnClick = ComboBox1Change
+            end
+            object Memo3: TMemo
+              Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+              DataDetectorTypes = []
+              Position.X = 256.000000000000000000
+              Position.Y = 48.000000000000000000
+              Size.Width = 497.000000000000000000
+              Size.Height = 89.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 20
+              Viewport.Width = 497.000000000000000000
+              Viewport.Height = 89.000000000000000000
+            end
+            object Button12: TButton
+              Position.X = 256.000000000000000000
+              Position.Y = 144.000000000000000000
+              Size.Width = 80.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 21
+              Text = 'Compress'
+              TextSettings.Trimming = None
+              OnClick = Button12Click
+            end
+            object Button13: TButton
+              Position.X = 344.000000000000000000
+              Position.Y = 144.000000000000000000
+              Size.Width = 80.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 22
+              Text = 'DeCompress'
+              TextSettings.Trimming = None
+              OnClick = Button13Click
+            end
+            object Button14: TButton
+              Position.X = 432.000000000000000000
+              Position.Y = 144.000000000000000000
+              Size.Width = 145.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 23
+              Text = 'Apply Unsynchronisation'
+              TextSettings.Trimming = None
+              OnClick = Button14Click
+            end
+            object Button15: TButton
+              Position.X = 584.000000000000000000
+              Position.Y = 144.000000000000000000
+              Size.Width = 168.000000000000000000
+              Size.Height = 22.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 24
+              Text = 'Remove Unsynchronisation'
+              TextSettings.Trimming = None
+              OnClick = Button15Click
+            end
+          end
+        end
+      end
+    end
+  end
+  object OpenDialog1: TOpenDialog
+    Left = 568
+    Top = 16
+  end
+  object SaveDialog1: TSaveDialog
+    Left = 648
+    Top = 16
+  end
+end

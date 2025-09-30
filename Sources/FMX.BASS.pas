@@ -15,23 +15,26 @@ unit FMX.BASS;
 
 interface
 
-uses
 {$IFDEF MSWINDOWS}
-  Windows
+uses
+  Winapi.Windows;
 {$ELSE}
-  SysUtils
-{$ENDIF};
+
+uses
+  System.SysUtils;
+{$ENDIF}
 
 type
-{$IFDEF NEXTGEN}
+  {$IFDEF NEXTGEN}
   PByteChar = MarshaledAString;
 
   TByteChar = Byte;
-{$ELSE}
+  {$ELSE}
+
   PByteChar = PAnsiChar;
 
   TByteChar = AnsiChar;
-{$ENDIF}
+  {$ENDIF}
 
 const
   BASSVERSION = $204; // API version
@@ -77,6 +80,7 @@ const
   BASS_ERROR_CODEC = 44; // codec is not available/supported
   BASS_ERROR_ENDED = 45; // the channel/file has ended
   BASS_ERROR_BUSY = 46; // the device is busy
+  BASS_ERROR_DENIED = 49;
   BASS_ERROR_UNKNOWN = -1; // some other mystery problem
 
   // BASS_SetConfig options
@@ -184,7 +188,6 @@ const
   BASS_STREAM_PRESCAN = $20000; // enable pin-point seeking/length (MP3/MP2/MP1)
 
   BASS_MP3_SETPOS = BASS_STREAM_PRESCAN;
-
   BASS_STREAM_AUTOFREE = $40000;
   // automatically free the stream when it stop/ends
   BASS_STREAM_RESTRATE = $80000;
@@ -766,23 +769,21 @@ type
  }
 
 const
-{$IFDEF MSWINDOWS}
+  {$IFDEF MSWINDOWS}
   bassdll = 'bass.dll';
-{$ENDIF}
-{$IFDEF LINUX}
-  bassdll = 'libbass.so';
-{$ENDIF}
-{$IFDEF MACOS}
-  {$IFDEF IOS}
-    bassdll = 'libbass.so';
-  {$ELSE}
-    bassdll = 'libbass.dylib';
   {$ENDIF}
-{$ENDIF}
-{$IFDEF ANDROID}
+  {$IFDEF LINUX}
   bassdll = 'libbass.so';
-{$ENDIF}
-
+  {$ENDIF}
+  {$IFDEF IOS}
+  bassdll = 'bass.framework/bass';
+  {$ENDIF}
+  {$IFDEF MACOS}
+  bassdll = 'libbass.dylib';
+  {$ENDIF}
+  {$IFDEF ANDROID}
+  bassdll = 'libbass.so';
+  {$ENDIF}
 
 var
   {$IFDEF MSWINDOWS}
@@ -904,10 +905,8 @@ function BASS_SetEAXPreset(env: LongInt): BOOL;
 
 implementation
 
-{$IFNDEF MSWINDOWS}
 uses
   System.IOUtils;
-{$ENDIF}
 
 function BASS_SPEAKER_N(n: Cardinal): Cardinal;
 begin
@@ -919,7 +918,7 @@ begin
   {$IFDEF MSWINDOWS}
   Result := '';
   {$ELSE}
-  Result := IncludeTrailingPathDelimiter(System.IOUtils.TPath.GetLibraryPath);
+  Result := IncludeTrailingPathDelimiter(TPath.GetLibraryPath);
   {$ENDIF}
 end;
 
@@ -930,27 +929,18 @@ end;
 
 function BASS_Lib: string;
 begin
-  {$IFDEF MSWINDOWS}
-  Result := BASS_FOLDER + bassdll;
-  {$ELSE}
-  Result := bassdll;
-  {$ENDIF}
+  Result := TPath.Combine(BASS_FOLDER, bassdll);
 end;
 
 procedure LoadBassDLL;
 begin
   FBassDLL := LoadLibrary(PChar(BASS_Lib));
-  {$IFDEF MSWINDOWS}
+  {$IFNDEF MSWINDOWS}
+  if FBassDLL = 0 then
+    FBassDLL := SafeLoadLibrary(TPath.Combine(TPath.GetLibraryPath, BASS_Lib));
+  {$ENDIF}
   if FBassDLL = 0 then
     Exit;
-  {$ELSE}
-  if FBassDLL = 0 then
-  begin
-    FBassDLL := SafeLoadLibrary(TPath.Combine(TPath.GetLibraryPath, BASS_Lib));
-    if FBassDLL = 0 then
-      Exit;
-  end;
-  {$ENDIF}
 
   BASS_SetConfig := GetProcAddress(FBassDLL, 'BASS_SetConfig');
   BASS_GetConfig := GetProcAddress(FBassDLL, 'BASS_GetConfig');
@@ -963,9 +953,9 @@ begin
   BASS_SetDevice := GetProcAddress(FBassDLL, 'BASS_SetDevice');
   BASS_GetDevice := GetProcAddress(FBassDLL, 'BASS_GetDevice');
   BASS_Free := GetProcAddress(FBassDLL, 'BASS_Free');
-{$IFDEF MSWINDOWS}
+  {$IFDEF MSWINDOWS}
   BASS_GetDSoundObject := GetProcAddress(FBassDLL, 'BASS_GetDSoundObject');
-{$ENDIF}
+  {$ENDIF}
   BASS_GetInfo := GetProcAddress(FBassDLL, 'BASS_GetInfo');
   BASS_Update := GetProcAddress(FBassDLL, 'BASS_Update');
   BASS_GetCPU := GetProcAddress(FBassDLL, 'BASS_GetCPU');
@@ -983,10 +973,10 @@ begin
   BASS_Set3DPosition := GetProcAddress(FBassDLL, 'BASS_Set3DPosition');
   BASS_Get3DPosition := GetProcAddress(FBassDLL, 'BASS_Get3DPosition');
   BASS_Apply3D := GetProcAddress(FBassDLL, 'BASS_Apply3D');
-{$IFDEF MSWINDOWS}
+  {$IFDEF MSWINDOWS}
   BASS_SetEAXParameters := GetProcAddress(FBassDLL, 'BASS_SetEAXParameters');
   BASS_GetEAXParameters := GetProcAddress(FBassDLL, 'BASS_GetEAXParameters');
-{$ENDIF}
+  {$ENDIF}
   BASS_MusicLoad := GetProcAddress(FBassDLL, 'BASS_MusicLoad');
   BASS_MusicFree := GetProcAddress(FBassDLL, 'BASS_MusicFree');
   BASS_SampleLoad := GetProcAddress(FBassDLL, 'BASS_SampleLoad');
@@ -1061,13 +1051,114 @@ begin
   begin
     BASS_Free;
     FreeLibrary(FBassDLL);
+    BASS_SetConfig := nil;
+    BASS_GetConfig := nil;
+    BASS_SetConfigPtr := nil;
+    BASS_GetConfigPtr := nil;
+    BASS_GetVersion := nil;
+    BASS_ErrorGetCode := nil;
+    BASS_GetDeviceInfo := nil;
+    BASS_Init := nil;
+    BASS_SetDevice := nil;
+    BASS_GetDevice := nil;
+    BASS_Free := nil;
+    {$IFDEF MSWINDOWS}
+    BASS_GetDSoundObject := nil;
+    {$ENDIF}
+    BASS_GetInfo := nil;
+    BASS_Update := nil;
+    BASS_GetCPU := nil;
+    BASS_Start := nil;
+    BASS_Stop := nil;
+    BASS_Pause := nil;
+    BASS_SetVolume := nil;
+    BASS_GetVolume := nil;
+
+    BASS_PluginLoad := nil;
+    BASS_PluginFree := nil;
+    BASS_PluginGetInfo := nil;
+    BASS_Set3DFactors := nil;
+    BASS_Get3DFactors := nil;
+    BASS_Set3DPosition := nil;
+    BASS_Get3DPosition := nil;
+    BASS_Apply3D := nil;
+    {$IFDEF MSWINDOWS}
+    BASS_SetEAXParameters := nil;
+    BASS_GetEAXParameters := nil;
+    {$ENDIF}
+    BASS_MusicLoad := nil;
+    BASS_MusicFree := nil;
+    BASS_SampleLoad := nil;
+    BASS_SampleCreate := nil;
+    BASS_SampleFree := nil;
+    BASS_SampleSetData := nil;
+    BASS_SampleGetData := nil;
+    BASS_SampleGetInfo := nil;
+    BASS_SampleSetInfo := nil;
+    BASS_SampleGetChannel := nil;
+    BASS_SampleGetChannels := nil;
+    BASS_SampleStop := nil;
+    BASS_StreamCreate := nil;
+    BASS_StreamCreateFile := nil;
+    BASS_StreamCreateURL := nil;
+    BASS_StreamCreateFileUser := nil;
+    BASS_StreamFree := nil;
+    BASS_StreamGetFilePosition := nil;
+    BASS_StreamPutData := nil;
+    BASS_StreamPutFileData := nil;
+    BASS_RecordGetDeviceInfo := nil;
+    BASS_RecordInit := nil;
+    BASS_RecordSetDevice := nil;
+    BASS_RecordGetDevice := nil;
+    BASS_RecordFree := nil;
+    BASS_RecordGetInfo := nil;
+    BASS_RecordGetInputName := nil;
+    BASS_RecordSetInput := nil;
+    BASS_RecordGetInput := nil;
+    BASS_RecordStart := nil;
+    BASS_ChannelBytes2Seconds := nil;
+    BASS_ChannelSeconds2Bytes := nil;
+    BASS_ChannelGetDevice := nil;
+    BASS_ChannelSetDevice := nil;
+    BASS_ChannelIsActive := nil;
+    BASS_ChannelGetInfo := nil;
+    BASS_ChannelGetTags := nil;
+    BASS_ChannelFlags := nil;
+    BASS_ChannelUpdate := nil;
+    BASS_ChannelLock := nil;
+    BASS_ChannelPlay := nil;
+    BASS_ChannelStop := nil;
+    BASS_ChannelPause := nil;
+    BASS_ChannelSetAttribute := nil;
+    BASS_ChannelGetAttribute := nil;
+    BASS_ChannelSlideAttribute := nil;
+    BASS_ChannelIsSliding := nil;
+    BASS_ChannelSet3DAttributes := nil;
+    BASS_ChannelGet3DAttributes := nil;
+    BASS_ChannelSet3DPosition := nil;
+    BASS_ChannelGet3DPosition := nil;
+    BASS_ChannelGetLength := nil;
+    BASS_ChannelSetPosition := nil;
+    BASS_ChannelGetPosition := nil;
+    BASS_ChannelGetLevel := nil;
+    BASS_ChannelGetData := nil;
+    BASS_ChannelSetSync := nil;
+    BASS_ChannelRemoveSync := nil;
+    BASS_ChannelSetDSP := nil;
+    BASS_ChannelSetLink := nil;
+    BASS_ChannelRemoveLink := nil;
+    BASS_ChannelSetFX := nil;
+    BASS_ChannelRemoveFX := nil;
+    BASS_FXSetParameters := nil;
+    BASS_FXGetParameters := nil;
+    BASS_FXReset := nil;
   end;
 end;
 
 {$IFDEF MSWINDOWS}
 function BASS_SetEAXPreset(env: LongInt): Bool;
 begin
-  case (env) of
+  case env of
     EAX_ENVIRONMENT_GENERIC:
       Result := BASS_SetEAXParameters(EAX_ENVIRONMENT_GENERIC, 0.5, 1.493, 0.5);
     EAX_ENVIRONMENT_PADDEDCELL:

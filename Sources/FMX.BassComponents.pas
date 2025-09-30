@@ -24,8 +24,7 @@ type
     property SizeByte;
     property State;
     property VolumeChannel;
-  published
-    //Props
+  published //Props
     property Async default False;
     property AutoInit default False;
     property AutoFree default True;
@@ -36,7 +35,7 @@ type
     property PauseOnIncomingCalls default False;
     property StreamURL;
     property PositionInterval default 1000;
-    //Events
+  published //Events
     property OnChangeState;
     property OnChangePosition;
     property OnEnd;
