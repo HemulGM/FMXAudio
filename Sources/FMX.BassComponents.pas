@@ -14,27 +14,21 @@ type
     property IsOpening;
     property IsPause;
     property IsPlay;
-    property Position;
     property PositionByte;
     property PositionPercent;
     property PositionTime;
     property PositionTimeLeft;
-    property Size;
     property SizeAsBuffer;
     property SizeByte;
     property State;
     property VolumeChannel;
   published //Props
-    property Async default False;
     property AutoInit default False;
     property AutoFree default True;
-    property AutoPlay default False;
     property BassLibrary;
     property FileName;
-    property KeepPlayChannel default False;
     property PauseOnIncomingCalls default False;
     property StreamURL;
-    property PositionInterval default 1000;
   published //Events
     property OnChangeState;
     property OnChangePosition;

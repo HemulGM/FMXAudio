@@ -274,7 +274,7 @@ begin
   UpdateFX;
 end;
 
-function StreamReadCallback(buffer: Pointer; length: DWORD; user: Pointer): DWORD; stdcall;
+function StreamReadCallback(buffer: Pointer; length: Cardinal; user: Pointer): Cardinal; {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 begin
   var Player := TFMXCustomPlayer(user);
   if Assigned(Player.FStream) then
@@ -290,7 +290,7 @@ begin
     Result := 0;
 end;
 
-function StreamSeekCallback(offset: QWORD; user: Pointer): BOOL; stdcall;
+function StreamSeekCallback(offset: QWORD; user: Pointer): BOOL; {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 begin
   var Player := TFMXCustomPlayer(user);
   if Assigned(Player.FStream) then
@@ -307,7 +307,7 @@ begin
     Result := False;
 end;
 
-function StreamLengthCallback(user: Pointer): QWORD; stdcall;
+function StreamLengthCallback(user: Pointer): QWORD; {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 begin
   var Player := TFMXCustomPlayer(user);
   try
@@ -318,7 +318,7 @@ begin
   end;
 end;
 
-procedure StreamCloseCallback(user: Pointer); stdcall;
+procedure StreamCloseCallback(user: Pointer); {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 begin
   var Player := TFMXCustomPlayer(user);
   if Player.FAutoFreeStream then
@@ -326,7 +326,7 @@ begin
   Player.FStream := nil;
 end;
 
-procedure StatusProc(buffer: Pointer; length: Cardinal; user: Pointer); stdcall;
+procedure StatusProc(buffer: Pointer; length: Cardinal; user: Pointer); {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 begin       {
   var str: AnsiString;
   SetString(str, PAnsiChar(buffer), length);}
