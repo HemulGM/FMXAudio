@@ -32,11 +32,9 @@ requires
   fmx;
 
 contains
-  FMX.BASS.AAC in 'Sources\FMX.BASS.AAC.pas',
   FMX.BASS in 'Sources\FMX.BASS.pas',
   FMX.Player in 'Sources\FMX.Player.pas',
   FMXAudioHGM.Reg in 'FMXAudioHGM.Reg.pas',
-  FMX.BASS.Plugins in 'Sources\FMX.BASS.Plugins.pas',
   FMX.Recorder in 'Sources\FMX.Recorder.pas',
   FMX.BassComponents in 'Sources\FMX.BassComponents.pas',
   FMX.BASS.Classes in 'Sources\FMX.BASS.Classes.pas';

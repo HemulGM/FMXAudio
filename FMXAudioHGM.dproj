@@ -173,11 +173,9 @@
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="fmx.dcp"/>
-        <DCCReference Include="Sources\FMX.BASS.AAC.pas"/>
         <DCCReference Include="Sources\FMX.BASS.pas"/>
         <DCCReference Include="Sources\FMX.Player.pas"/>
         <DCCReference Include="FMXAudioHGM.Reg.pas"/>
-        <DCCReference Include="Sources\FMX.BASS.Plugins.pas"/>
         <DCCReference Include="Sources\FMX.Recorder.pas"/>
         <DCCReference Include="Sources\FMX.BassComponents.pas"/>
         <DCCReference Include="Sources\FMX.BASS.Classes.pas"/>
@@ -219,6 +217,12 @@
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="..\..\..\..\Public\Documents\Embarcadero\Studio\20.0\Bpl\FMXAudioHGM.bpl" Configuration="Debug" Class="ProjectOutput"/>
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\37.0\Bpl\FMXAudioHGM.bpl" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>FMXAudioHGM.bpl</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="OSX32">
                         <Operation>1</Operation>
